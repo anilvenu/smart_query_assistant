@@ -1,0 +1,95 @@
+2025-04-28 09:47:46,587 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:47:46,589 - db.conversation_store - INFO - Created conversation: ffc22311-ca6b-4ca7-88e4-b6efa1ebec20
+2025-04-28 09:47:46,624 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:47:54,240 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:47:54,269 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:47:54,318 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:47:54,339 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:47:54,355 - db.conversation_store - INFO - Added message 41217308-3f8b-472f-83b5-c5407380b129 to conversation ffc22311-ca6b-4ca7-88e4-b6efa1ebec20
+2025-04-28 09:47:57,610 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-04-28 09:47:57,630 - db.conversation_store - INFO - Added message 784c0250-680c-4666-ae9c-9f825f2622df to conversation ffc22311-ca6b-4ca7-88e4-b6efa1ebec20
+2025-04-28 09:48:26,562 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:48:26,590 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:52:17,918 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:52:17,920 - db.conversation_store - INFO - Created conversation: c0531090-2521-4900-9aad-2ce8ec14dcf7
+2025-04-28 09:52:17,953 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:52:36,377 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:52:36,406 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:52:36,425 - db.conversation_store - INFO - Added message 3d1416b4-651e-4fd5-9317-964c47070e42 to conversation c0531090-2521-4900-9aad-2ce8ec14dcf7
+2025-04-28 09:52:38,702 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-04-28 09:52:38,715 - db.conversation_store - INFO - Added message 5a06956f-8eae-45d2-9165-5b4ba5446431 to conversation c0531090-2521-4900-9aad-2ce8ec14dcf7
+2025-04-28 09:52:38,800 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:52:38,830 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:52:49,042 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:52:49,072 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:52:49,096 - db.conversation_store - INFO - Added message 5ee3b8a3-461a-46bc-9185-2384876543cd to conversation c0531090-2521-4900-9aad-2ce8ec14dcf7
+2025-04-28 09:52:51,569 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-04-28 09:52:51,574 - db.conversation_store - INFO - Added message 228df81b-e0de-4a99-b1c8-0f3da3a5e2b8 to conversation c0531090-2521-4900-9aad-2ce8ec14dcf7
+2025-04-28 09:52:51,656 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:52:51,685 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:52:54,892 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:52:54,922 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:52:54,950 - db.conversation_store - INFO - Added message c74f1dca-d66a-438b-8c6d-3b3ca0883dbe to conversation c0531090-2521-4900-9aad-2ce8ec14dcf7
+2025-04-28 09:52:57,522 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-04-28 09:52:57,527 - db.conversation_store - INFO - Added message 28cff7cd-36d0-4f24-bef3-aedc9ea8985f to conversation c0531090-2521-4900-9aad-2ce8ec14dcf7
+2025-04-28 09:52:57,615 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:52:57,644 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:52:59,411 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:52:59,445 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:52:59,477 - db.conversation_store - INFO - Added message 5cd8f6de-77f0-4076-8ebd-a0e23dfc3b5b to conversation c0531090-2521-4900-9aad-2ce8ec14dcf7
+2025-04-28 09:53:02,558 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-04-28 09:53:02,563 - db.conversation_store - INFO - Added message b3400c82-9143-41c5-86a8-4a5e166c06dc to conversation c0531090-2521-4900-9aad-2ce8ec14dcf7
+2025-04-28 09:53:02,658 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:53:02,683 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:53:10,016 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:53:10,022 - db.conversation_store - INFO - Created conversation: 38964932-31cb-4cc6-bb28-85e99758b2d1
+2025-04-28 09:53:10,099 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:53:10,128 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:53:11,994 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:53:12,023 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:53:12,047 - db.conversation_store - INFO - Added message ebf08104-f113-4d92-a11f-21724430a444 to conversation 38964932-31cb-4cc6-bb28-85e99758b2d1
+2025-04-28 09:53:14,516 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-04-28 09:53:14,521 - db.conversation_store - INFO - Added message 7d1e9670-1901-4664-8bc9-12e721cdb764 to conversation 38964932-31cb-4cc6-bb28-85e99758b2d1
+2025-04-28 09:53:14,587 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:53:14,617 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:53:28,515 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:53:28,542 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:58:04,400 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:58:04,431 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:58:09,673 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:58:09,703 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:58:12,511 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:58:12,514 - db.conversation_store - INFO - Created conversation: c40d1cd7-468d-41f5-9cb5-d259963cbd1e
+2025-04-28 09:58:12,543 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:58:15,348 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:58:15,379 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:58:15,418 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:58:15,438 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:58:15,453 - db.conversation_store - INFO - Added message c0806a0f-bfd1-44db-bfeb-4e014f77bf20 to conversation c40d1cd7-468d-41f5-9cb5-d259963cbd1e
+2025-04-28 09:58:17,772 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-04-28 09:58:17,777 - db.conversation_store - INFO - Added message 07105833-1e9b-472a-800d-902e84f5250a to conversation c40d1cd7-468d-41f5-9cb5-d259963cbd1e
+2025-04-28 09:58:25,933 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:58:25,965 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:58:25,995 - db.conversation_store - INFO - Added message fb595daf-cc81-4290-8c02-8ac886fbb7da to conversation c40d1cd7-468d-41f5-9cb5-d259963cbd1e
+2025-04-28 09:58:28,440 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-04-28 09:58:28,449 - db.conversation_store - INFO - Added message 3aaa1e75-e503-4f35-98f7-7f47dcafd4b8 to conversation c40d1cd7-468d-41f5-9cb5-d259963cbd1e
+2025-04-28 09:59:15,077 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:59:15,079 - db.conversation_store - INFO - Created conversation: e21a9351-4c9f-42d0-bfec-5c53f0f57dc2
+2025-04-28 09:59:15,121 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:59:21,567 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:59:21,600 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:59:21,608 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 09:59:21,638 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 09:59:21,656 - db.conversation_store - INFO - Added message 08d61cfc-bc97-4477-93bd-2137cb1d3d76 to conversation e21a9351-4c9f-42d0-bfec-5c53f0f57dc2
+2025-04-28 09:59:24,518 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-04-28 09:59:24,535 - db.conversation_store - INFO - Added message 09d09101-931d-4e6f-af4e-2a33a437c55a to conversation e21a9351-4c9f-42d0-bfec-5c53f0f57dc2
+2025-04-28 10:09:24,890 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 10:09:24,894 - db.conversation_store - INFO - Created conversation: 9cb0f1f1-8665-49c9-9fe7-231d9bce04e7
+2025-04-28 10:09:24,927 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 10:09:29,395 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 10:09:29,425 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 10:09:29,434 - db.db_helper - INFO - Connected to database: application_db
+2025-04-28 10:09:29,468 - db.db_helper - INFO - Connected to database: insurance_db
+2025-04-28 10:09:29,484 - db.conversation_store - INFO - Added message c01237d4-7b2d-411f-b376-ac2cc55280fe to conversation 9cb0f1f1-8665-49c9-9fe7-231d9bce04e7
+2025-04-28 10:09:32,031 - httpx - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-04-28 10:09:32,038 - db.conversation_store - INFO - Added message 7851561b-2b2f-417a-9a7b-b7f3cfd1fcc8 to conversation 9cb0f1f1-8665-49c9-9fe7-231d9bce04e7
