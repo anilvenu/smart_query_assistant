@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+python-dotenv = "==1.0.0"
+streamlit = "*"
+psycopg2-binary = "*"
+pandas = "*"
+pyyaml = "*"
+langchain = "*"
+openai = "*"
+langchain-community = "*"
+langchain-openai = "*"
+langchain-anthropic = "*"
+anthropic = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"

@@ -1,0 +1,11 @@
+channel_id,channel_name,channel_type,commission_rate
+1,"Direct Sales","direct",0.00
+2,"Independent Agents","agent",15.00
+3,"Exclusive Agents","agent",12.50
+4,"Brokers - Small","broker",18.00
+5,"Brokers - Enterprise","broker",20.00
+6,"Online Platform","direct",5.00
+7,"Affinity Partnerships","partnership",10.00
+8,"Bancassurance","partnership",12.00
+9,"Retail Partners","partnership",8.50
+10,"Digital Marketplaces","digital",7.50
