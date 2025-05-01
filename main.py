@@ -18,9 +18,6 @@ from sqlalchemy.orm import Session
 
 from app.verified_query import (
     VerifiedQuery,
-    Question,
-    get_verified_query,
-    get_verified_queries_by_vector_search,
     get_best_query,
     get_query_recommendations,
     get_follow_up_queries,
@@ -135,13 +132,19 @@ async def websocket_endpoint(websocket: WebSocket):
 
             elif action == "run_query":
                 final_sql = data.get("sql")
+                user_question = data.get("question")
+                print(f"\n\n\nRunning query: {final_sql}")
+                print(f"\n\n\nUser question: {user_question}")
                 with Session(insurance_db_engine) as db:
                     try:
                         results = run_query(final_sql, db)
+                        narrative = f"TODO - answer for {user_question}" # generate_narrative_from_results(user_question, results)
+
                         await websocket.send_json({
                             "status": "ok",
                             "step": "query_results",
-                            "results": results
+                            "results": results,
+                            "narrative": narrative
                         })
                     except Exception as e:
                         await websocket.send_json({

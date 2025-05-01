@@ -43,7 +43,7 @@ document.getElementById("jump-btn").onclick = () => {
 
 function sendRunQuery() {
   setWorking("Running query...");
-  ws.send(JSON.stringify({ action: "run_query", sql: finalSQL }));
+  ws.send(JSON.stringify({ action: "run_query", sql: finalSQL, question: currentQuestion }));
 }
 
 ws.onmessage = (event) => {
@@ -68,7 +68,7 @@ ws.onmessage = (event) => {
     verifiedQuery = msg.verified_query;
     appendMessage(`
       <details class="step">
-        <summary><b>Verified Query</b></summary>
+        <summary><b>Verified SQL</b></summary>
         <pre><code class="sql">${verifiedQuery.sql}</code></pre>
       </details>
     `);
@@ -81,11 +81,7 @@ ws.onmessage = (event) => {
     setWorking("");
     appendMessage(`
       <details class="step">
-        <summary><b>SQL Recommendations</b></summary>
-        <div>${msg.explanation}</div>
-      </details>
-      <details class="step">
-        <summary><b>Modifications</b></summary>
+        <summary><b>SQL Modifications</b></summary>
         <pre><code class="sql">${modText}</code></pre>
       </details>
     `);
@@ -111,34 +107,66 @@ ws.onmessage = (event) => {
 
   else if (msg.step === "query_results") {
     setWorking("");
-    const results = msg.results;
-    const headers = results.columns.map(h => `<th>${h}</th>`).join('');
-    const rows = results.rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('');
-    appendMessage(`<div class="step"><b>Query Results:</b><table><thead>${headers}</thead><tbody>${rows}</tbody></table></div>`);
-    setWorking("Retrieving follow-up suggestions...");
-    ws.send(JSON.stringify({ action: "get_follow_ups", query_id: verifiedQuery.name }));
-  }
 
-  else if (msg.step === "follow_ups") {
-    setWorking("");
-    if (!msg.follow_ups.length) return;
-    const list = msg.follow_ups.map((fu, idx) => {
-      const text = fu.questions?.[0]?.text || '(No question text)';
-      return `<button class="follow-up-btn" data-question="${encodeURIComponent(text)}">${text}</button>`;
+    const results = msg.results;
+    if (msg.narrative) {
+        appendMessage(`<div class="step"><b>Summary:</b><br>${msg.narrative}</div>`);
+    }
+
+    //if (results.rows.length) {
+    //    appendMessage(`<div class="step"><b>Rows:</b> ${results.rows.length}</div>`);
+    //}
+    const headers = results.columns.map(h => `<th>${h}</th>`).join('');
+    const rows = results.rows.map(row => {
+
+        const cells = results.columns.map(col => `<td>${row[col]}</td>`).join('');
+        return `<tr>${cells}</tr>`;
     }).join('');
 
-    appendMessage(`<div class="follow-up"><b>Follow-up Suggestions:</b><br/>${list}</div>`);
+    appendMessage(`<div class="step">
+                    <b>Query Results:</b>
+                    <table>
+                        <thead>${headers}</thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                   </div>`);
 
-    document.querySelectorAll(".follow-up-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const text = decodeURIComponent(btn.getAttribute("data-question"));
-        currentQuestion = text;
-        btn.disabled = true;
-        appendMessage(`<strong>User:</strong> ${text}`, 'user');
-        ws.send(JSON.stringify({ action: "get_best_query", question: text }));
-      });
-    });
-  }
+    setWorking("Retrieving follow-up suggestions...");
+    ws.send(JSON.stringify({ action: "get_follow_ups", query_id: verifiedQuery.id, query_name: verifiedQuery.name, question: currentQuestion }));
+    setWorking("");
+    }
+
+    else if (msg.step === "follow_ups") {
+        if (!msg.follow_ups.length) return;
+
+        const list = msg.follow_ups.map((fu, idx) => {
+            const text = fu.questions?.[0]?.text || '(No question text)';
+            return `<button class="follow-up-btn" data-question="${encodeURIComponent(text)}">${text}</button>`;
+        }).join('');
+
+        appendMessage(`<div class="follow-up">
+                        <b>Follow-up Suggestions:</b>
+                        <br/>
+                        ${list}
+                       </div>`);
+
+        // Attach event listeners for follow-up buttons
+        document.querySelectorAll(".follow-up-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const text = decodeURIComponent(btn.getAttribute("data-question"));
+            currentQuestion = text;
+            document.getElementById("question-input").value = '';
+            appendMessage(`<strong>User:</strong> ${text}`, 'user');
+
+            setWorking("Searching for best query...");
+            ws.send(JSON.stringify({ action: "get_best_query", question: text }));
+            setWorking("");
+        });
+        });
+    }
+
+
+
 };
 
 document.getElementById("question-form").onsubmit = (e) => {

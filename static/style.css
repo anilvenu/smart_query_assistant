@@ -26,8 +26,13 @@ html, body {
     padding: 0.8em 1em;
     border-radius: 8px;
   }
-  .user { background: #f2f2f2; align-self: flex-end; }
-  .assistant { background: #d5ddeb; }
+  .user { 
+    background: #f2f2f2; 
+    align-self: flex-start; 
+  }
+  .assistant { 
+    background: #d5ddeb; 
+  }
   
   .error {
     background-color: #ffe6e6;
@@ -57,7 +62,7 @@ html, body {
     margin-top: 1em;
   }
   .step th, .step td {
-    border: 1px solid #405aba;
+    border: 1px solid #2f2f2f;
     padding: 0.5em;
     text-align: left;
   }
@@ -82,7 +87,7 @@ html, body {
     margin: 0.25em;
     padding: 0.5em 1em;
     border-radius: 20px;
-    background-color: #eef2ff;
+    background-color: #f2f2f2;
     border: 1px solid #ccc;
     cursor: pointer;
   }
