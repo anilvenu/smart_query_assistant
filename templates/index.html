@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Smart Assistant</title>
+  <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 1em; background: #ffffff; }
+
+    #chat { overflow-y: auto; padding: 0.2em; background: white; border-radius: 5px; }
+
+    .message { margin: 1em 0; padding: 0.8em 1em; border-radius: 8px; }
+    .user { background: #f2f2f2; align-self: flex-end; }
+    .assistant { background: #d5ddeb; }
+    .error {background-color: #ffe6e6; color: #990000; border-left: 4px solid #cc0000; padding: 0.8em 1em; border-radius: 6px; margin: 1em 0;}
+
+    .step pre { background: #f6f8fa; padding: 1em; border-radius: 8px; overflow-x: auto; }
+    .step table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+    .step th, .step td { border: 1px solid #405aba; padding: 0.5em; text-align: left; }
+
+    details.step {background: #f9f9f9;border-left: 4px solid #ccc;padding: 0.5em 1em;margin: 1em 0;border-radius: 6px;}
+    summary {cursor: pointer; font-weight: bold; margin-bottom: 0.5em;}
+
+    .follow-up button { margin: 0.25em; padding: 0.5em 1em; }
+    #question-form { display: flex; margin-top: 1em; }
+    #question-input { flex: 1; padding: 0.5em; font-size: 1em; }
+    #stop-btn { margin-left: 0.5em; }
+  </style>
+</head>
+<body>
+  <div id="chat"></div>
+  <div id="working-indicator" style="margin: 1em; font-style: italic; color: gray;"></div>
+
+  <form id="question-form">
+    <input type="text" id="question-input" placeholder="Ask a question..." required />
+    <button type="submit">Ask</button>
+    <button type="button" id="stop-btn">Stop</button>
+  </form>
+
+  <script>
+    const ws = new WebSocket(`ws://${location.host}/ws`);
+    let currentQuestion = "";
+    let verifiedQuery = null;
+    let modifications = null;
+    let finalSQL = null;
+    let stopped = false;
+
+    const chat = document.getElementById("chat");
+
+    function scrollToBottomIfNeeded() {
+      const threshold = 100; // px from bottom
+      const isNearBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < threshold;
+
+      if (isNearBottom) {
+        chat.scrollTop = chat.scrollHeight;
+      }
+    }
+
+    function appendMessage(content, role = 'assistant') {
+      const msg = document.createElement("div");
+      msg.classList.add("message", role);
+      msg.innerHTML = content;
+      chat.appendChild(msg);
+      scrollToBottomIfNeeded(); 
+      //chat.scrollTop = chat.scrollHeight;
+      document.querySelectorAll('pre code').forEach(hljs.highlightElement);
+    }
+
+    function sendRunQuery() {
+      setWorking("Running query...");
+      ws.send(JSON.stringify({ action: "run_query", sql: finalSQL }));
+    }
+
+    function sendFollowUp(fu) {
+      currentQuestion = fu.questions[0].text;
+      document.getElementById("question-input").value = '';
+      appendMessage(`<strong>User:</strong> ${currentQuestion}`, 'user');
+      setWorking("Finding the best verified SQL...");
+      ws.send(JSON.stringify({ action: "get_best_query", question: currentQuestion }));
+    }
+
+    function setWorking(message = '') {
+      const el = document.getElementById("working-indicator");
+      el.innerText = message;
+    }
+
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+
+      if (msg.status === "stopped") {
+        appendMessage("<em>Execution stopped by user.</em>");
+        setWorking("");
+        stopped = true;
+        return;
+      }
+
+      if (msg.status === "no_match") {
+        appendMessage("<strong>No verified query found for the question.</strong>");
+        setWorking("");
+        return;
+      }
+
+      if (msg.status === "error") {
+        appendMessage(`<div class="assistant error"><b>Error:</b> ${msg.message}</div>`);
+        setWorking("");
+        return;
+      }
+
+      if (stopped) return;
+
+      if (msg.step === "best_query") {
+        verifiedQuery = msg.verified_query;
+        appendMessage(`
+        <details class="step">
+          <summary><b>Verified Query</b></summary>
+          <pre><code class="sql">${verifiedQuery.sql}</code></pre>
+        </details>`
+        );
+        
+        setWorking("Generating SQL recommendations...");
+        ws.send(JSON.stringify({ action: "get_recommendations", question: currentQuestion, verified_query: verifiedQuery }));
+      }
+
+      else if (msg.step === "recommendations") {
+        const modText = msg.modifications.map((mod, i) => `${i + 1}. [${mod.type}] ${mod.description}\nImpact: ${mod.sql_impact}`).join('\n\n');
+        const needsMod = msg.modifications_needed;
+        modifications = msg.modifications;
+        
+        appendMessage(`
+        <details class="step">
+          <summary><b>Recommended Modifications</b></summary>
+          <pre><code class="sql">${modText}</code></pre>
+        </details>`
+        );
+
+        if (needsMod) {
+          setWorking("Applying SQL modifications...");
+          ws.send(JSON.stringify({ action: "modify_query", sql: verifiedQuery.sql, modifications }));
+        } else {
+          finalSQL = verifiedQuery.sql;
+          sendRunQuery();
+        }
+      }
+
+      else if (msg.step === "modified_sql") {
+        finalSQL = msg.final_sql;
+
+        appendMessage(`
+        <details class="step">
+          <summary><b>Final SQL</b></summary>
+          <pre><code class="sql">${finalSQL}</code></pre>
+        </details>`
+        );
+
+        sendRunQuery();
+      }
+
+      else if (msg.step === "query_results") {
+
+        const results = msg.results;
+
+        if (results.rows.length) {
+          appendMessage(`<div class="step"><b>Rows:</b> ${results.rows.length}</div>`);
+        }
+
+        const headers = results.columns.map(h => `<th>${h}</th>`).join('');
+        const rows = results.rows.map(row => {
+
+          const cells = results.columns.map(col => `<td>${row[col]}</td>`).join('');
+          return `<tr>${cells}</tr>`;
+        }).join('');
+
+        appendMessage(`<div class="step"><b>Query Results:</b><table><thead>${headers}</thead><tbody>${rows}</tbody></table></div>`);
+
+        setWorking("Retrieving follow-up suggestions...");
+        ws.send(JSON.stringify({ action: "get_follow_ups", query_id: verifiedQuery.id, query_name: verifiedQuery.name, question: currentQuestion }));
+        setWorking("");
+        }
+
+        else if (msg.step === "follow_ups") {
+          if (!msg.follow_ups.length) return;
+
+          const list = msg.follow_ups.map((fu, idx) => {
+            const text = fu.questions?.[0]?.text || '(No question text)';
+            return `<button class="follow-up-btn" data-question="${encodeURIComponent(text)}">${text}</button>`;
+          }).join('');
+
+          appendMessage(`<div class="follow-up"><b>Follow-up Suggestions:</b><br/>${list}</div>`);
+
+          // Attach event listeners for follow-up buttons
+          document.querySelectorAll(".follow-up-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const text = decodeURIComponent(btn.getAttribute("data-question"));
+              currentQuestion = text;
+              document.getElementById("question-input").value = '';
+              appendMessage(`<strong>User:</strong> ${text}`, 'user');
+
+              setWorking("Searching for best query...");
+              ws.send(JSON.stringify({ action: "get_best_query", question: text }));
+              setWorking("");
+            });
+          });
+        }
+
+    };
+
+    document.getElementById("question-form").onsubmit = (e) => {
+      e.preventDefault();
+      const q = document.getElementById("question-input").value;
+      if (!q) return;
+      currentQuestion = q;
+      verifiedQuery = null;
+      modifications = null;
+      finalSQL = null;
+      stopped = false;
+      appendMessage(`<strong>User:</strong> ${q}`, 'user');
+      ws.send(JSON.stringify({ action: "get_best_query", question: q }));
+    };
+
+    document.getElementById("stop-btn").onclick = () => {
+      ws.send(JSON.stringify({ action: "stop" }));
+    };
+  </script>
+</body>
+</html>

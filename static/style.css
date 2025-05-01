@@ -1,0 +1,123 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+    background: #ffffff;
+  }
+  
+  #container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1em;
+    background: white;
+    border-radius: 5px;
+    box-shadow: 0 0 4px rgba(0,0,0,0.1);
+  }
+  
+  .message {
+    margin: 1em 0;
+    padding: 0.8em 1em;
+    border-radius: 8px;
+  }
+  .user { background: #f2f2f2; align-self: flex-end; }
+  .assistant { background: #d5ddeb; }
+  
+  .error {
+    background-color: #ffe6e6;
+    color: #990000;
+    border-left: 4px solid #cc0000;
+    padding: 0.8em 1em;
+    border-radius: 6px;
+    margin: 1em 0;
+  }
+  
+  .working {
+    font-style: italic;
+    color: gray;
+    margin: 0.5em 1em;
+  }
+  
+  .step pre {
+    background: #f6f8fa;
+    padding: 1em;
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+  .step table {
+    width: 100%;
+    background: white;
+    border-collapse: collapse;
+    margin-top: 1em;
+  }
+  .step th, .step td {
+    border: 1px solid #405aba;
+    padding: 0.5em;
+    text-align: left;
+  }
+  
+  details.step {
+    background: #f9f9f9;
+    border-left: 4px solid #ccc;
+    padding: 0.5em 1em;
+    margin: 1em 0;
+    border-radius: 6px;
+  }
+  summary {
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+  }
+  
+  .follow-up {
+    margin-top: 1em;
+  }
+  .follow-up button {
+    margin: 0.25em;
+    padding: 0.5em 1em;
+    border-radius: 20px;
+    background-color: #eef2ff;
+    border: 1px solid #ccc;
+    cursor: pointer;
+  }
+  .follow-up button:disabled {
+    background-color: #ddd;
+    cursor: not-allowed;
+  }
+  
+  #question-form {
+    display: flex;
+    gap: 0.5em;
+    padding: 0.5em;
+    border-top: 1px solid #ccc;
+    background: #f9f9f9;
+  }
+  #question-input {
+    flex: 1;
+    padding: 0.5em;
+    font-size: 1em;
+  }
+  #stop-btn {
+    margin-left: 0.5em;
+  }
+  
+  .jump-btn {
+    display: none;
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    z-index: 1000;
+    padding: 0.5em 1em;
+    font-size: 1em;
+    background: #eee;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  

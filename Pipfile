@@ -15,6 +15,12 @@ pyyaml = "*"
 python-dotenv = "*"
 openai = "*"
 anthropic = "*"
+sentence-transformers = "*"
+fastapi = "*"
+uvicorn = "*"
+jinja2 = "*"
+httpx = "*"
+websockets = "*"
 
 [dev-packages]
 ipykernel = "*"

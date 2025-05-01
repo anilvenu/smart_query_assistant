@@ -222,22 +222,6 @@ Previously verified queries:
         if not modifications:
             return original_sql
         
-        # System prompt for SQL adjustment
-        # Read system prompt from adjust_sql_system_prompt.txt
-        system_prompt_file = os.path.join(os.path.dirname(__file__), 'adjust_sql_system_prompt.txt')
-        if os.path.exists(system_prompt_file):
-            with open(system_prompt_file, 'r') as file:
-                system_prompt = file.read()
-        else:
-            self.logger.warning(f"System prompt file not found: {system_prompt_file}")
-
-        user_prompt_file = os.path.join(os.path.dirname(__file__), 'adjust_sql_user_prompt.txt')
-        if os.path.exists(user_prompt_file):
-            with open(user_prompt_file, 'r') as file:
-                user_prompt = file.read()
-        else:
-            self.logger.warning(f"User prompt file not found: {user_prompt_file}")
-
 
         system_prompt = """You are an expert SQL developer for PostgreSQL. 
 Your task is to analyze and modify SQL based on specific requirements."""
