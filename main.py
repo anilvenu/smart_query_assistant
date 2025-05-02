@@ -23,7 +23,8 @@ from app.helper import (
     get_best_query,
     get_query_recommendations,
     get_follow_up_queries,
-    modify_query
+    modify_query,
+    review_modified_query
 )
 
 from app.agents.report_writer import (
@@ -45,6 +46,7 @@ insurance_db_engine = create_engine(config.BUSINESS_DB_CONNECTION_STRING)
 # Initialize LLM service
 llm_service = LLMService()
 
+MAX_REVIEW_ITERATIONS = 3
 
 # Add some sample context
 context = {
@@ -68,10 +70,16 @@ async def websocket_endpoint(websocket: WebSocket):
     clients.add(websocket)
     try:
         while True:
+
             data = await websocket.receive_json()
             action = data.get("action")
             question = data.get("question")
             session_id = data.get("session_id")
+
+            logger.info(f"[{session_id}] Received action: {action} with question: {question}")
+
+            iteration_count = 0
+            MAX_REVIEW_ITERATIONS = 3 
 
             if action == "stop":
                 await websocket.send_json({"status": "stopped"})
@@ -181,21 +189,133 @@ async def websocket_endpoint(websocket: WebSocket):
                         "explanation": recs.get('explanation', 'No explanation provided')
                     })
 
-            elif action == "modify_query":
 
+            elif action == "modify_query":
                 logger.debug(f"Modifying query for question: {question}")
                 sql = data.get("sql")
                 modifications = data.get("modifications")
+                iteration_count = data.get("iteration_count", 0)
 
+                # Get question context
+                original_question = data.get("original_question", question)
+                enhanced_question = data.get("enhanced_question", question)
+
+                # Generate modified SQL
                 final_sql = modify_query(sql, modifications, llm_service)
-                logger.debug(f"Final SQL: {final_sql}")
+                logger.debug(f"Modified SQL (iteration {iteration_count}): {final_sql}")
+                
+                #verified_query_data = data.get("verified_query")
 
+                # Check if we need to review the SQL (only if not the final iteration)
+                if iteration_count < MAX_REVIEW_ITERATIONS:
+                    # Get verified query data
+                    verified_query_data = data.get("verified_query")
+                    verified_query = VerifiedQuery(**verified_query_data)
+                    
+                    # Send interim update to client
+                    await websocket.send_json({
+                        "status": "ok",
+                        "step": "reviewing_sql",
+                        "message": f"Reviewing SQL modifications (iteration {iteration_count + 1}/{MAX_REVIEW_ITERATIONS})...",
+                        "iteration": iteration_count + 1,
+                        "max_iterations": MAX_REVIEW_ITERATIONS
+                    })
+                    
+                    # Review the modified SQL
+                    review_results = review_modified_query(
+                        original_sql=sql,
+                        modified_sql=final_sql,
+                        original_question=original_question,
+                        enhanced_question=enhanced_question,
+                        verified_query=verified_query,
+                        llm_service=llm_service
+                    )
+                    
+                    # If the SQL has issues and we haven't reached max iterations
+                    if not review_results.get("is_valid", True) and iteration_count < MAX_REVIEW_ITERATIONS - 1:
+                        # Send review results to client
+                        await websocket.send_json({
+                            "status": "ok",
+                            "step": "sql_review_results",
+                            "review_results": review_results,
+                            "iteration": iteration_count + 1,
+                            "max_iterations": MAX_REVIEW_ITERATIONS
+                        })
+                        
+                        # If there's a corrected SQL, use it directly
+                        if review_results.get("corrected_sql"):
+                            final_sql = review_results["corrected_sql"]
+                            
+                            # Send the final SQL after corrections
+                            await websocket.send_json({
+                                "status": "ok",
+                                "step": "modified_sql",
+                                "final_sql": final_sql,
+                                "review_applied": True
+                            })
+                        else:
+                            # Otherwise, create new modifications based on review
+                            new_modifications = [
+                                {
+                                    "type": "review_fix",
+                                    "description": suggestion,
+                                    "sql_impact": "Fix SQL issues"
+                                }
+                                for suggestion in review_results.get("suggestions", [])
+                            ]
+                            
+                            # If we have valid new modifications, start another iteration
+                            if new_modifications:
+                                # Recursive call to the modify_query handler
+                                await websocket.send_json({
+                                    "status": "ok",
+                                    "step": "additional_modifications",
+                                    "sql": final_sql,
+                                    "modifications": new_modifications,
+                                    "iteration_count": iteration_count + 1,
+                                    "verified_query": verified_query_data,
+                                    "original_question": data.get("original_question", question),
+                                    "enhanced_question": data.get("enhanced_question", question)
+                                })
+                                continue
+                    else:
+                        # SQL is valid or we reached max iterations, proceed with the current SQL
+                        await websocket.send_json({
+                            "status": "ok",
+                            "step": "modified_sql",
+                            "final_sql": final_sql,
+                            "is_valid": review_results.get("is_valid", True),
+                            "review_message": review_results.get("explanation", "SQL review completed.")
+                        })
+                else:
+                    # We've reached max iterations, proceed with the current SQL
+                    logger.warning(f"Max iterations reached for SQL modifications.")
+                    await websocket.send_json({
+                        "status": "ok",
+                        "step": "modified_sql",
+                        "final_sql": final_sql,
+                        "max_iterations_reached": True
+                    })
+
+
+            elif action == "apply_additional_modifications":
+                logger.debug(f"Applying additional modifications based on review")
+                sql = data.get("sql")
+                modifications = data.get("modifications")
+                iteration_count = data.get("iteration_count", 0)
+                
+                # Call modify_query again with updated parameters
+                final_sql = modify_query(sql, modifications, llm_service)
+                
+                # TODO: Similar to the code above - this could be refactored to avoid duplication
                 # Send the modified SQL to the client
                 await websocket.send_json({
                     "status": "ok",
                     "step": "modified_sql",
-                    "final_sql": final_sql
+                    "final_sql": final_sql,
+                    "iteration": iteration_count
                 })
+
 
             elif action == "run_query":
                 final_sql = data.get("sql")

@@ -12,8 +12,8 @@ from datetime import datetime
 from sentence_transformers import SentenceTransformer
 
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app')))
-from verified_query import Question
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from app.helper import Question
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

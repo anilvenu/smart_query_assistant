@@ -533,6 +533,101 @@ def modify_query(sql: str, modifications: List[Dict[str, Any]], llm_service) -> 
     return modified_sql
 
 
+def review_modified_query(
+    original_sql: str, 
+    modified_sql: str, 
+    original_question: str, 
+    enhanced_question: str, 
+    verified_query: VerifiedQuery, 
+    llm_service
+) -> Dict[str, Any]:
+    """
+    Review a modified SQL query for correctness, alignment with user intent,
+    and potential issues like hallucinated column/table names.
+    
+    Args:
+        original_sql: The original verified SQL query
+        modified_sql: The modified SQL query to review
+        original_question: The original user question
+        enhanced_question: The enhanced/clarified question
+        verified_query: The VerifiedQuery object with metadata
+        llm_service: LLM service for reviewing
+        
+    Returns:
+        Dictionary with review results including:
+        - is_valid: Boolean indicating if the query is valid
+        - issues: List of identified issues
+        - suggestions: List of suggested improvements
+        - explanation: Explanation of review findings
+    """
+    # Create a system prompt for the LLM
+    system_prompt = f"""You are an expert SQL reviewer for {config.BUSINESS_DATABASE_TYPE}. 
+    Your task is to analyze a modified SQL query for correctness and alignment with user intent."""
+    
+    # User prompt for reviewing the modified SQL
+    user_prompt = f"""
+    Please review this modified SQL query for correctness, SQL syntax, and alignment with the user's question.
+    
+    Original SQL Query:
+    ```sql
+    {original_sql}
+    ```
+    
+    Modified SQL Query:
+    ```sql
+    {modified_sql}
+    ```
+    
+    Original User Question: {original_question}
+    
+    Enhanced User Question: {enhanced_question}
+    
+    SQL Query Explanation:
+    {verified_query.query_explanation}
+    
+    SQL Modification Instructions:
+    {verified_query.instructions}
+    
+    Tables Used: {', '.join(verified_query.tables_used)}
+    
+    Please analyze the modified SQL query and identify any:
+    1. SQL syntax errors or logical errors
+    2. Hallucinated table or column names not mentioned in the original SQL or modification instructions
+    3. Misalignment with the user's question intent
+    4. Poor SQL practices or performance issues
+    5. Missing filters, grouping, or sorting needed to properly answer the question
+    
+    Return a JSON with these fields:
+    - "is_valid": boolean indicating if the query is valid and ready to run
+    - "issues": array of identified issues (empty if none found)
+    - "suggestions": array of suggested improvements (empty if none needed)
+    - "explanation": string with brief explanation of your findings
+    - "corrected_sql": string with corrected SQL only if improvements are needed (otherwise null)
+    """
+    
+    try:
+        logger.info("Reviewing modified SQL with LLM...")
+        
+        # Get review results from LLM
+        review_results = llm_service.generate_structured_output(
+            prompt=user_prompt,
+            system_prompt=system_prompt,
+            temperature=0.1
+        )
+        
+        return review_results
+    except Exception as e:
+        logger.error(f"Error reviewing modified SQL: {str(e)}")
+        # Return a default response indicating review failure
+        return {
+            "is_valid": False,
+            "issues": ["Failed to complete SQL review due to an error."],
+            "suggestions": ["Please check the SQL manually for any issues."],
+            "explanation": f"Review process encountered an error: {str(e)}",
+            "corrected_sql": None
+        }
+
+
 def get_follow_up_queries(query_id: str, db: Session) -> List[VerifiedQuery]:
     """
     Get follow-up verified queries for a query ID.

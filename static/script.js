@@ -144,7 +144,14 @@ ws.onmessage = (event) => {
 
     if (msg.modifications_needed) {
       setWorking("Modifying query...");
-      ws.send(JSON.stringify({ action: "modify_query", sql: verifiedQuery.sql, modifications }));
+      ws.send(JSON.stringify({ 
+        action: "modify_query", 
+        sql: verifiedQuery.sql, 
+        modifications,
+        verified_query: verifiedQuery,
+        original_question: currentQuestion,
+        enhanced_question: currentQuestionEnhanced        
+      }));
     } else {
       finalSQL = verifiedQuery.sql;
 
@@ -153,14 +160,93 @@ ws.onmessage = (event) => {
     }
   }
 
+
+
+  else if (msg.step === "reviewing_sql") {
+    setWorking(`${msg.message}`);
+  }
+
+  else if (msg.step === "sql_review_results") {
+    // Display SQL review results
+    const reviewHtml = `
+      <details class="step">
+        <summary><b>SQL Review (Iteration ${msg.iteration}/${msg.max_iterations})</b></summary>
+        <p><b>Review Summary:</b> ${msg.review_results.explanation}</p>
+        ${msg.review_results.issues.length ? `
+          <p><b>Issues Found:</b></p>
+          <ul>
+            ${msg.review_results.issues.map(issue => `<li>${issue}</li>`).join('')}
+          </ul>
+        ` : ''}
+        ${msg.review_results.suggestions.length ? `
+          <p><b>Suggestions:</b></p>
+          <ul>
+            ${msg.review_results.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+          </ul>
+        ` : ''}
+        ${msg.review_results.corrected_sql ? `
+          <p><b>Corrected SQL:</b></p>
+          <pre><code class="sql">${msg.review_results.corrected_sql}</code></pre>
+        ` : ''}
+      </details>
+    `;
+    
+    appendMessage(reviewHtml);
+    
+    // If there's a corrected SQL, we'll get a modified_sql message next
+    // If there are additional modifications needed, we'll get an additional_modifications message
+    setWorking("Processing review feedback...");
+  }
+
+  else if (msg.step === "additional_modifications") {
+    // Display the additional modifications needed
+    const modText = msg.modifications.map((mod, i) => 
+      `${i + 1}. [${mod.type}] ${mod.description}`).join('\n\n');
+    
+    appendMessage(`
+      <details class="step">
+        <summary><b>Additional SQL Adjustments Identified (Iteration ${msg.iteration_count})</b></summary>
+        <pre><code>${modText}</code></pre>
+      </details>
+    `);
+    
+    setWorking(`Applying Adjustements (Iteration ${msg.iteration_count})...`);
+    
+    // Send the request to apply additional modifications
+    ws.send(JSON.stringify({
+      action: "apply_additional_modifications",
+      sql: msg.sql,
+      modifications: msg.modifications,
+      iteration_count: msg.iteration_count,
+      verified_query: msg.verified_query,
+      original_question: msg.original_question,
+      enhanced_question: msg.enhanced_question
+    }));
+  }
+
+
   else if (msg.step === "modified_sql") {
     finalSQL = msg.final_sql;
+    
+    let reviewStatus = "";
+    if (msg.review_applied) {
+      reviewStatus = `<p class="review-status success">SQL adjusted based on review.</p>`;
+    } else if (msg.is_valid === false) {
+      reviewStatus = `<p class="review-status warning">SQL may have issues: ${msg.review_message}</p>`;
+    } else if (msg.max_iterations_reached) {
+      reviewStatus = `<p class="review-status info">Maximum review iterations completed.</p>`;
+    } else if (msg.review_message) {
+      reviewStatus = `<p class="review-status success">${msg.review_message}</p>`;
+    }
+    
     appendMessage(`
       <details class="step">
         <summary><b>Modified SQL</b></summary>
+        ${reviewStatus}
         <pre><code class="sql">${finalSQL}</code></pre>
       </details>
     `);
+    
     sendRunQuery();
   }
 

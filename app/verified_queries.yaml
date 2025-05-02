@@ -276,7 +276,7 @@ verified_queries:
     1. Filter conditions:
         - Policy status: Can be modified to 'active', 'lapsed', or 'cancelled' using values from comments
         - Region filter: Can be added as "AND a.region = '[region]'" to filter specific region
-        - Agency tier filter: Can be added as "AND a.tier = '[tier]'" to filter by agency tier
+        - Agency tier filter: Can be added as "AND a.tier = '[tier]'" to filter by agency tier - Gold, Silver, Bronze, Platinum
         
     2. Time period:
         - For specific time periods, add "AND p.start_date BETWEEN '[start_date]' AND '[end_date]'"
