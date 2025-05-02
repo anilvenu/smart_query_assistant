@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 load = load_dotenv()
 if not load:
     raise EnvironmentError("Failed to load environment variables from .env file.")
-
+else:
+    print("Environment variables loaded successfully.")
 
 # Business database configuration (insurance data)
 BUSINESS_DB_CONFIG = {

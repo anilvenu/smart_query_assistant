@@ -1,7 +1,7 @@
 import os
 import time
 from dotenv import load_dotenv
-from llm_service import LLMService
+from app.llm.llm_service import LLMService
 
 def run_provider_test(provider):
     """Test the LLM service with a specific provider."""

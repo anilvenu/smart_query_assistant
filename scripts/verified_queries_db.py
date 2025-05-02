@@ -290,6 +290,7 @@ def main():
     
     # Create database and tables
     create_database()
+    drop_tables()
     create_tables()
     
     # Load and insert data from YAML

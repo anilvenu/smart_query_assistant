@@ -1,5 +1,6 @@
 const ws = new WebSocket(`ws://${location.host}/ws`);
 let currentQuestion = "";
+let currentQuestionEnhanced = "";
 let verifiedQuery = null;
 let modifications = null;
 let finalSQL = null;
@@ -63,7 +64,57 @@ ws.onmessage = (event) => {
   }
   if (stopped) return;
 
-  if (msg.step === "best_query") {
+
+  if (msg.step === "intent_clarifications") {
+    setWorking("");
+    
+    // Create a message for clarification options
+    let clarificationsHtml = `
+      <div class="step">
+        <b>I noticed your question could be interpreted in different ways. Which of these best matches your intent?</b>
+        <div class="clarification-options">
+    `;
+    
+    // Add each clarification as a button with an explanation tooltip
+    msg.clarifications.forEach((clarification, index) => {
+      clarificationsHtml += `
+        <div class="clarification-option">
+          <button class="clarification-btn" data-question="${encodeURIComponent(clarification.text)}" title="${clarification.explanation}">
+            ${clarification.text}
+          </button>
+        </div>
+      `;
+    });
+    
+    clarificationsHtml += `
+        </div>
+      </div>
+    `;
+    
+    appendMessage(clarificationsHtml);
+    
+    // Event listeners to the clarification buttons
+    document.querySelectorAll(".clarification-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const selectedQuestion = decodeURIComponent(btn.getAttribute("data-question"));
+        currentQuestion = selectedQuestion;
+        
+        // Append the selected clarification as a message
+        appendMessage(`<strong>User clarified:</strong> ${selectedQuestion}`, 'user');
+        
+        // Send the selected clarification to the server
+        setWorking("Searching for best query...");
+        ws.send(JSON.stringify({ 
+          action: "select_clarification", 
+          selected_question: selectedQuestion,
+          original_question: msg.original_question
+        }));
+      });
+    });
+  }
+
+
+  else if (msg.step === "best_query") {
     setWorking("Generating SQL recommendations...");
     verifiedQuery = msg.verified_query;
     appendMessage(`
@@ -78,19 +129,27 @@ ws.onmessage = (event) => {
   else if (msg.step === "recommendations") {
     const modText = msg.modifications.map((mod, i) => `${i + 1}. [${mod.type}] ${mod.description}\nImpact: ${mod.sql_impact}`).join('\n\n');
     modifications = msg.modifications;
+    currentQuestionEnhanced = msg.enhanced_question;
+
     setWorking("");
+
+    appendMessage(`<div class="step">${currentQuestionEnhanced}</div>`);
+
     appendMessage(`
       <details class="step">
         <summary><b>SQL Modifications</b></summary>
         <pre><code class="sql">${modText}</code></pre>
       </details>
     `);
+
     if (msg.modifications_needed) {
       setWorking("Modifying query...");
       ws.send(JSON.stringify({ action: "modify_query", sql: verifiedQuery.sql, modifications }));
     } else {
       finalSQL = verifiedQuery.sql;
+
       sendRunQuery();
+
     }
   }
 
@@ -110,7 +169,7 @@ ws.onmessage = (event) => {
 
     const results = msg.results;
     if (msg.narrative) {
-        appendMessage(`<div class="step"><b>Summary:</b><br>${msg.narrative}</div>`);
+        appendMessage(`<div class="step">${msg.narrative}</div>`);
     }
 
     //if (results.rows.length) {
@@ -124,7 +183,7 @@ ws.onmessage = (event) => {
     }).join('');
 
     appendMessage(`<div class="step">
-                    <b>Query Results:</b>
+                    <b>Results</b>
                     <table>
                         <thead>${headers}</thead>
                         <tbody>${rows}</tbody>
@@ -132,7 +191,7 @@ ws.onmessage = (event) => {
                    </div>`);
 
     setWorking("Retrieving follow-up suggestions...");
-    ws.send(JSON.stringify({ action: "get_follow_ups", query_id: verifiedQuery.id, query_name: verifiedQuery.name, question: currentQuestion }));
+    ws.send(JSON.stringify({ action: "get_follow_ups", query_id: verifiedQuery.id, query_name: verifiedQuery.name, question: currentQuestionEnhanced }));
     setWorking("");
     }
 
@@ -145,7 +204,7 @@ ws.onmessage = (event) => {
         }).join('');
 
         appendMessage(`<div class="follow-up">
-                        <b>Follow-up Suggestions:</b>
+                        <b>Suggested Follow-up Questions</b>
                         <br/>
                         ${list}
                        </div>`);

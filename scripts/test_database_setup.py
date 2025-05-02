@@ -3,7 +3,7 @@ import sys
 import logging
 import pandas as pd
 
-# Add the project root to the Python path
+# Add the project root to the Python path to import app modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import from app

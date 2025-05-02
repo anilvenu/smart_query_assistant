@@ -4,7 +4,9 @@ from typing import Dict, Any, List, Optional, Union
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
+load = load_dotenv()
+if not load:
+    raise EnvironmentError("Failed to load environment variables from .env file.")
 
 # API keys
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -16,14 +18,14 @@ class LLMService:
     def __init__(self):
         """Initialize the appropriate LLM client based on environment config."""
         # Get configuration from environment - IMPORTANT: Read this inside __init__
-        self.provider = os.getenv("LLM_PROVIDER", "openai").lower()
+        self.provider = os.getenv("LLM_PROVIDER", "anthropic").lower()
         
         if self.provider == "openai":
             if not OPENAI_API_KEY:
                 raise ValueError("OpenAI API key is not set in environment variables")
             import openai
             self.client = openai.OpenAI(api_key=OPENAI_API_KEY)
-        elif self.provider == "claude":
+        elif self.provider == "anthropic":
             if not ANTHROPIC_API_KEY:
                 raise ValueError("Anthropic API key is not set in environment variables")
             import anthropic
@@ -37,6 +39,7 @@ class LLMService:
                       temperature: float = 0.0, 
                       max_tokens: int = 2000) -> str:
         """Generate text from the configured LLM provider."""
+
         if self.provider == "openai":
             messages = []
             if system_prompt:
@@ -51,9 +54,9 @@ class LLMService:
             )
             return response.choices[0].message.content
             
-        elif self.provider == "claude":
+        elif self.provider == "anthropic":
             messages = [{"role": "user", "content": prompt}]
-            
+
             response = self.client.messages.create(
                 model="claude-3-haiku-20240307",
                 max_tokens=max_tokens,
@@ -61,6 +64,9 @@ class LLMService:
                 system=system_prompt if system_prompt else "",
                 messages=messages
             )
+            if not response.content:
+                raise ValueError("Empty response from Claude")
+
             return response.content[0].text
     
     def generate_structured_output(self, 
