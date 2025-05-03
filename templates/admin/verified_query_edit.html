@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verified Query Editor</title>
+    <link rel="icon" href="/static/images/piq.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/admin.css">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+</head>
+<body>
+    <div id="header">
+        <div class="logo-container">
+            <img src="/static/images/premiumiq.png" alt="PremiumIQ Logo" class="wide-logo">
+        </div>
+        <h1 id="page-title">{{ "Create New Query" if is_new else "Edit Query" }}</h1>
+    </div>
+
+    <div id="container" class="admin-container">
+        <div class="admin-toolbar">
+            <button id="back-btn" class="admin-btn">Back</button>
+            <div>
+                <button id="save-btn" class="admin-btn">Save Query</button>
+                <button id="cancel-btn" class="admin-btn">Cancel</button>
+            </div>
+        </div>
+
+        <div class="find-match-section" id="find-match-section">
+            <h3>Find Matching Query</h3>
+            <p>Enter a query description to find a matching template:</p>
+            <div class="form-group">
+                <input type="text" id="match-query-input" placeholder="e.g., Top performing agents by sales">
+                <button type="button" id="find-match-btn" class="admin-btn">Find Match</button>
+            </div>
+            <div id="match-result" class="match-result hidden">
+                <!-- Match results will be displayed here -->
+            </div>
+        </div>
+
+        <div class="edit-container">
+            <form id="query-form" class="edit-form">
+                <div class="form-section">
+                    <h3>Basic Information</h3>
+                    <div class="form-group">
+                        <label for="query-id">ID</label>
+                        <input type="text" id="query-id" name="id" required {{ "readonly" if not is_new else "" }}>
+                    </div>
+                    <div class="form-group">
+                        <label for="query-name">Name</label>
+                        <input type="text" id="query-name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="query-verified-by">Verified By</label>
+                        <input type="text" id="query-verified-by" name="verified_by" required>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Query Explanation</h3>
+                    <div class="form-group">
+                        <textarea id="query-explanation" name="query_explanation" rows="5" required></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>SQL Query</h3>
+                    <div class="form-group">
+                        <textarea id="query-sql" name="sql" rows="10" required></textarea>
+                        <div class="button-row">
+                            <button type="button" id="run-query-btn" class="admin-btn">Run Query</button>
+                            <span id="query-status"></span>
+                        </div>
+                    </div>
+                    <div id="query-results" class="query-results hidden">
+                        <!-- Query results will be displayed here -->
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Instructions</h3>
+                    <div class="form-group">
+                        <textarea id="query-instructions" name="instructions" rows="5"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Tables Used</h3>
+                    <div class="form-group">
+                        <input type="text" id="tables-input" placeholder="Add a table and press Enter">
+                        <div id="tables-container" class="tag-container"></div>
+                        <input type="hidden" id="tables-used" name="tables_used">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Questions</h3>
+                    <div class="form-group">
+                        <input type="text" id="question-input" placeholder="Add a question and press Enter">
+                        <div id="questions-container" class="list-container"></div>
+                        <input type="hidden" id="questions" name="questions">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Follow-up Queries</h3>
+                    <div class="form-group">
+                        <select id="followup-select">
+                            <option value="">Select a follow-up query...</option>
+                        </select>
+                        <button type="button" id="add-followup-btn" class="admin-btn small">Add</button>
+                        <div id="followups-container" class="list-container"></div>
+                        <input type="hidden" id="follow-ups" name="follow_ups">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="notification" class="notification hidden"></div>
+
+    <script src="/static/admin/verified_query_edit.js"></script>
+</body>
+</html>

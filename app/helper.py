@@ -666,9 +666,6 @@ def save_verified_query(verified_query: VerifiedQuery, db: Session) -> bool:
         Success status
     """
     try:
-        # Begin transaction
-        transaction = db.begin()
-        
         # Insert or update the verified query
         query = """
         INSERT INTO verified_query (
@@ -707,20 +704,21 @@ def save_verified_query(verified_query: VerifiedQuery, db: Session) -> bool:
         
         # Insert questions with vector embeddings
         for question in verified_query.questions:
-            # Generate embedding if not provided
-            embedding = question.vector_embedding
-            if embedding is None:
-                embedding_vector = embedding_model.encode(question.text)
-                embedding = embedding_vector.tobytes()
+            # Generate embedding
+            embedding_vector = embedding_model.encode(question.text)
+            vector_str = '[' + ','.join(str(x) for x in embedding_vector) + ']'
             
             db.execute(text("""
             INSERT INTO question (question_text, verified_query_id, vector_embedding)
-            VALUES (:text, :vq_id, :embedding)
+            VALUES (:text, :vq_id, CAST(:embedding AS vector))
             """), {
                 "text": question.text,
                 "vq_id": verified_query.id,
-                "embedding": embedding
+                "embedding": vector_str
             })
+        
+        logger.info(f"Inserted {len(verified_query.questions)} questions for query ID: {verified_query.id}")
+        logger.info(f"Deleted existing questions and follow-ups for query ID: {verified_query.id}")
         
         # Delete existing follow-ups for this query
         db.execute(
@@ -738,15 +736,18 @@ def save_verified_query(verified_query: VerifiedQuery, db: Session) -> bool:
                 "target_id": follow_up_id
             })
         
-        # Commit transaction
-        transaction.commit()
+        logger.info(f"Inserted {len(verified_query.follow_ups)} follow-ups for query ID: {verified_query.id}")
+        
+        # Explicitly commit the transaction
+        db.commit()
+        
         return True
         
     except Exception as e:
         logger.error(f"Error saving verified query: {str(e)}")
-        if transaction:
-            transaction.rollback()
+        db.rollback()
         return False
+
 
 def delete_verified_query(query_id: str, db: Session) -> bool:
     """

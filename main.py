@@ -17,10 +17,17 @@ def log_uncaught_exceptions(exc_type, exc_value, exc_traceback):
 sys.excepthook = log_uncaught_exceptions
 
 # Fast API
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Form
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi import HTTPException, Depends
+from fastapi import Form, Body
+
+from datetime import datetime
+
+from pydantic import BaseModel
+from typing import List, Dict, Optional
 
 import json
 
@@ -30,6 +37,7 @@ from sqlalchemy.orm import Session
 
 from app.helper import (
     VerifiedQuery,
+    Question,
     enhance_question,
     generate_intent_clarifications,
     get_best_query,
@@ -38,6 +46,8 @@ from app.helper import (
     modify_query,
     review_modified_query
 )
+from app.helper import get_verified_query, get_verified_queries, save_verified_query, get_db_session
+
 from app.agents.report_writer import (
     write_narrative
 )
@@ -49,6 +59,21 @@ from app.utilities import config
 
 # LLM service
 from app.llm.llm_service import LLMService
+
+# Pydantic models for request bodies
+class QuestionCreate(BaseModel):
+    text: str
+
+class VerifiedQueryCreate(BaseModel):
+    id: str
+    name: str
+    query_explanation: str
+    sql: str
+    instructions: Optional[str] = None
+    tables_used: List[str] = []
+    questions: List[QuestionCreate] = []
+    follow_ups: List[str] = []
+    verified_by: str = "Admin"
 
 # Configure database connections
 engine = create_engine(config.APPLICATION_DB_CONNECTION_STRING)
@@ -71,10 +96,239 @@ templates = Jinja2Templates(directory="templates")
 
 clients = set()
 
+# Web pages
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+@app.get("/admin/verified_queries")
+async def get_all_verified_queries(request: Request):
+    """Admin page to view all verified queries"""
+    return templates.TemplateResponse("admin/verified_queries.html", {"request": request})
+
+@app.get("/admin/verified_query/{query_id}")
+async def view_verified_query(request: Request, query_id: str):
+    """Admin page to view a specific verified query"""
+    return templates.TemplateResponse("admin/verified_query_detail.html", {"request": request, "query_id": query_id})
+
+@app.get("/admin/verified_query/new")
+async def new_verified_query_page(request: Request):
+    """Admin page to create a new verified query"""
+    return templates.TemplateResponse(
+        "admin/verified_query_edit.html", 
+        {"request": request, "is_new": True}
+    )
+
+@app.get("/admin/verified_query/{query_id}/edit")
+async def edit_verified_query_page(request: Request, query_id: str):
+    """Admin page to edit an existing verified query"""
+    return templates.TemplateResponse(
+        "admin/verified_query_edit.html", 
+        {"request": request, "is_new": False, "query_id": query_id}
+    )
+
+# API endpoints
+@app.get("/api/verified_queries")
+async def api_get_verified_queries(db: Session = Depends(get_db_session)):
+    """API endpoint to get all verified queries"""
+    queries = get_verified_queries(db)
+    return [q.model_dump(mode="json") for q in queries]
+
+@app.get("/api/verified_query/{query_id}")
+async def api_get_verified_query(query_id: str, db: Session = Depends(get_db_session)):
+    """API endpoint to get a specific verified query"""
+    query = get_verified_query(query_id, db, include_embeddings=False)
+    if not query:
+        raise HTTPException(status_code=404, detail="Query not found")
+    return query.model_dump(mode="json")
+
+@app.get("/api/find_matching_query")
+async def api_find_matching_query(
+    query_text: str,
+    db: Session = Depends(get_db_session)
+):
+    """Find the best matching verified query for a given text"""
+    try:
+        # Use the same matching function used in Smart Query Assistant
+        best_query_result = get_best_query(query_text, llm_service, db=db)
+        
+        if not best_query_result or not best_query_result.get("verified_query"):
+            return {"found": False, "message": "No matching query found"}
+        
+        verified_query = best_query_result["verified_query"]
+        confidence = best_query_result.get("confidence", 0)
+        
+        return {
+            "found": True,
+            "query": verified_query.model_dump(mode="json"),
+            "confidence": confidence,
+            "matched_question": best_query_result.get("matched_question", "")
+        }
+    except Exception as e:
+        logger.error(f"Error finding matching query: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error finding match: {str(e)}")
+
+
+@app.get("/api/query_network")
+async def api_get_query_network(db: Session = Depends(get_db_session)):
+    """Get the network of verified queries for visualization"""
+    try:
+        # Get all verified queries
+        queries = get_verified_queries(db)
+        
+        # Prepare nodes and links for the graph visualization
+        nodes = []
+        links = []
+        
+        # Create nodes
+        for query in queries:
+            # Extract essential data for each node
+            nodes.append({
+                "id": query.id,
+                "name": query.name,
+                "tables": query.tables_used,
+                # Count questions for node size
+                "questionCount": len(query.questions) if query.questions else 0
+            })
+            
+            # Create links (edges)
+            if query.follow_ups:
+                for follow_up_id in query.follow_ups:
+                    links.append({
+                        "source": query.id,
+                        "target": follow_up_id
+                    })
+        
+        return {
+            "nodes": nodes,
+            "links": links
+        }
+    except Exception as e:
+        logger.error(f"Error getting query network: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# API for creating/updating verified queries
+@app.post("/api/verified_query")
+async def api_create_verified_query(
+    query: VerifiedQueryCreate,
+    db: Session = Depends(get_db_session)
+):
+    """API endpoint to create a new verified query"""
+    try:
+        # Check if ID already exists
+        existing = get_verified_query(query.id, db)
+        if existing:
+            raise HTTPException(status_code=400, detail="Query ID already exists")
+        
+        # Create VerifiedQuery object
+        verified_query = VerifiedQuery(
+            id=query.id,
+            name=query.name,
+            query_explanation=query.query_explanation,
+            sql=query.sql,
+            instructions=query.instructions,
+            tables_used=query.tables_used,
+            questions=[Question(text=q.text) for q in query.questions],
+            follow_ups=query.follow_ups,
+            verified_at=datetime.now(),
+            verified_by=query.verified_by
+        )
+        
+        # Save to database
+        success = save_verified_query(verified_query, db)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to save query")
+        
+        return {"status": "success", "id": query.id}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error creating verified query: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
+
+@app.put("/api/verified_query/{query_id}")
+async def api_update_verified_query(
+    query_id: str,
+    query: VerifiedQueryCreate,
+    db: Session = Depends(get_db_session)
+):
+    """API endpoint to update an existing verified query"""
+    try:
+        # Check if ID exists
+        existing = get_verified_query(query_id, db)
+        if not existing:
+            raise HTTPException(status_code=404, detail="Query not found")
+        
+        # Ensure IDs match
+        if query_id != query.id:
+            raise HTTPException(status_code=400, detail="Query ID mismatch")
+        
+        # Create VerifiedQuery object
+        verified_query = VerifiedQuery(
+            id=query.id,
+            name=query.name,
+            query_explanation=query.query_explanation,
+            sql=query.sql,
+            instructions=query.instructions,
+            tables_used=query.tables_used,
+            questions=[Question(text=q.text) for q in query.questions],
+            follow_ups=query.follow_ups,
+            verified_at=datetime.now(),
+            verified_by=query.verified_by
+        )
+        
+        # Save to database
+        success = save_verified_query(verified_query, db)
+        if not success:
+            # Explicitly rollback if save failed
+            db.rollback()
+            raise HTTPException(status_code=500, detail="Failed to update query")
+        
+        return {"status": "success", "id": query.id}
+    except HTTPException as e:
+        # Re-raise HTTP exceptions
+        raise e
+    except Exception as e:
+        # Rollback on other exceptions
+        db.rollback()
+        logger.error(f"Error updating verified query: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
+
+@app.post("/api/run_test_query")
+async def api_run_test_query(
+    query: Dict[str, str] = Body(...),
+    db: Session = Depends(get_db_session)
+):
+    """Run a test SQL query"""
+    try:
+        sql = query.get("sql")
+        if not sql:
+            raise HTTPException(status_code=400, detail="SQL query is required")
+        
+        # Use the same function that runs queries in the main app
+        with Session(insurance_db_engine) as db:
+            results = run_query(sql, db)
+            return {
+                "status": "success", 
+                "results": results
+            }
+    except Exception as e:
+        logger.error(f"Error running test query: {str(e)}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+
+@app.get("/api/verified_queries/options")
+async def api_get_query_options(db: Session = Depends(get_db_session)):
+    """API to get all queries as options for follow-ups"""
+    queries = get_verified_queries(db)
+    return [{"id": q.id, "name": q.name} for q in queries]
+
+
+# WebSocket endpoint
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()

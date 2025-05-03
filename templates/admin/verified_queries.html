@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PIQ Verified Queries</title>
+    <link rel="icon" href="/static/images/piq.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/admin.css">
+</head>
+<body>
+    <div id="header">
+        <div class="logo-container">
+            <img src="/static/images/premiumiq.png" alt="PremiumIQ Logo" class="wide-logo">
+        </div>
+        <h1>Verified Queries</h1>
+    </div>
+
+    <div id="container" class="admin-container">
+        <div class="admin-toolbar">
+            <input type="text" id="search-input" placeholder="Search queries...">
+            <button id="view-network-btn" class="admin-btn">View Query Network</button>
+            <button id="add-query-btn" class="admin-btn">Add New Query</button>
+        </div>
+
+        <div id="queries-table-container">
+            <table id="queries-table" class="admin-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Tables Used</th>
+                        <th>Questions</th>
+                        <th>Follow-ups</th>
+                        <th>Verified At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="queries-list">
+                    <!-- Data will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="network-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Query Network Visualization</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-toolbar">
+                <input type="text" id="graph-search" placeholder="Search for a query...">
+                <select id="color-by">
+                    <option value="none">Color by: None</option>
+                    <option value="tables">Color by: # of Tables</option>
+                    <option value="connections">Color by: # of Connections</option>
+                </select>
+                <button id="reset-graph" class="admin-btn small">Reset View</button>
+            </div>
+            <div id="graph-container"></div>
+            <div id="node-info" class="node-info hidden">
+                <h3 id="node-title">Query Details</h3>
+                <p id="node-description"></p>
+                <button id="view-node-btn" class="admin-btn primary">View Query</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="/static/admin/verified_queries.js"></script>
+    <script src="/static/admin/query_network.js"></script>
+</body>
+</html>
