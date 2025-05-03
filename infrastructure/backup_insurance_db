@@ -1,0 +1,82 @@
+"""
+Script to export all tables from insurance_db to CSV files in the current directory.
+"""
+import os
+import psycopg2
+import pandas as pd
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Database connection parameters
+DB_CONFIG = {
+    "dbname": "insurance_db",
+    "user": "postgres",
+    "password": "",  # Replace with your password if needed
+    "host": "localhost",
+    "port": "5432"
+}
+
+def get_all_tables(conn):
+    """Get a list of all tables in the database."""
+    query = """
+    SELECT table_name
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+    AND table_type = 'BASE TABLE'
+    """
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        tables = [row[0] for row in cursor.fetchall()]
+    
+    return tables
+
+def export_table_to_csv(conn, table_name):
+    """Export a table to a CSV file."""
+    output_file = f"{table_name}.csv"
+    
+    # Create a SQL query to select all records from the table
+    query = f"SELECT * FROM {table_name}"
+    
+    try:
+        # Read data into a pandas DataFrame
+        df = pd.read_sql_query(query, conn)
+        
+        # Write DataFrame to CSV
+        df.to_csv(output_file, index=False)
+        logger.info(f"Exported {len(df)} rows from {table_name} to {output_file}")
+        
+        return True
+    except Exception as e:
+        logger.error(f"Error exporting {table_name}: {str(e)}")
+        return False
+
+def main():
+    """Main function to export all tables to CSV files."""
+    try:
+        # Connect to the database
+        logger.info("Connecting to insurance_db...")
+        conn = psycopg2.connect(**DB_CONFIG)
+        
+        # Get all tables
+        tables = get_all_tables(conn)
+        logger.info(f"Found {len(tables)} tables: {', '.join(tables)}")
+        
+        # Export each table to CSV
+        for table in tables:
+            export_table_to_csv(conn, table)
+        
+        logger.info("Export completed successfully!")
+    
+    except Exception as e:
+        logger.error(f"Database connection error: {str(e)}")
+    
+    finally:
+        if 'conn' in locals() and conn is not None:
+            conn.close()
+            logger.info("Database connection closed.")
+
+if __name__ == "__main__":
+    main()

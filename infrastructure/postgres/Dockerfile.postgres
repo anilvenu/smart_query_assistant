@@ -1,0 +1,36 @@
+# Dockerfile
+FROM postgres:14 AS builder
+
+# 1. Install build dependencies plus Postgres dev headers
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    libreadline-dev \
+    flex \
+    bison \
+    libz-dev \
+    wget \
+    ca-certificates \
+    postgresql-server-dev-14
+
+# 2. Build & install pgvector
+RUN git clone https://github.com/pgvector/pgvector.git /tmp/pgvector
+WORKDIR /tmp/pgvector
+RUN make && make install
+
+# 3. Build & install Apache AGE for PG14
+RUN git clone https://github.com/apache/age.git /tmp/age
+WORKDIR /tmp/age
+RUN git checkout PG14
+RUN make && make install
+
+# 4. Create final image
+FROM postgres:14
+
+# Copy compiled libraries from builder
+COPY --from=builder /usr/lib/postgresql /usr/lib/postgresql
+COPY --from=builder /usr/share/postgresql /usr/share/postgresql
+
+# Expose and set default command
+EXPOSE 5432
+CMD ["postgres", "-c", "shared_preload_libraries='age,pgvector'"]
