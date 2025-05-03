@@ -1,8 +1,20 @@
 import traceback
 import logging
+import sys
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+# Set exception hook to log uncaught exceptions with traceback
+def log_uncaught_exceptions(exc_type, exc_value, exc_traceback):
+    logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+
+sys.excepthook = log_uncaught_exceptions
 
 # Fast API
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Form
@@ -26,12 +38,11 @@ from app.helper import (
     modify_query,
     review_modified_query
 )
-
 from app.agents.report_writer import (
     write_narrative
 )
-
 from app.gadgets.sql_runner import run_query
+from app.visualization.chart_generator import generate_chart_config
 
 # Configurations
 from app.utilities import config
@@ -251,7 +262,9 @@ async def websocket_endpoint(websocket: WebSocket):
                                 "status": "ok",
                                 "step": "modified_sql",
                                 "final_sql": final_sql,
-                                "review_applied": True
+                                "is_valid": review_results.get("is_valid", True),
+                                "review_message": review_results.get("explanation", "SQL review completed."),
+                                "review_applied": review_results.get("corrected_sql") is not None
                             })
                         else:
                             # Otherwise, create new modifications based on review
@@ -320,11 +333,18 @@ async def websocket_endpoint(websocket: WebSocket):
             elif action == "run_query":
                 final_sql = data.get("sql")
                 user_question = data.get("question")
+                verified_query_data = data.get("verified_query")  # Get the verified query data if available
+                query_explanation = None
+                
+                if verified_query_data:
+                    verified_query = VerifiedQuery(**verified_query_data)
+                    query_explanation = verified_query.query_explanation
 
                 with Session(insurance_db_engine) as db:
                     try:
                         results = run_query(final_sql, db)
 
+                        # First, generate the narrative
                         narrative = write_narrative(
                             question=user_question,
                             context=context,
@@ -332,11 +352,30 @@ async def websocket_endpoint(websocket: WebSocket):
                             llm_service=llm_service
                         )
 
+                        # Send interim update to client
+                        await websocket.send_json({
+                            "status": "ok",
+                            "step": "narrative_generated",
+                            "narrative": narrative,
+                            "message": "Generating visualization..."
+                        })
+
+                        # Now generate chart configuration
+                        chart_config = generate_chart_config(
+                            results=results,
+                            question=user_question,
+                            narrative=narrative,
+                            query_explanation=query_explanation,
+                            llm_service=llm_service
+                        )
+
+                        # Send the complete results
                         await websocket.send_json({
                             "status": "ok",
                             "step": "query_results",
                             "results": results,
-                            "narrative": narrative
+                            "narrative": narrative,
+                            "chart_config": chart_config
                         })
                     except Exception as e:
                         await websocket.send_json({
@@ -344,6 +383,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             "step": "query_results",
                             "message": str(e)
                         })
+
 
             elif action == "get_follow_ups":
                 query_id = data.get("query_id")

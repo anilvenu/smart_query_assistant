@@ -1,15 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
 html, body {
     height: 100%;
     margin: 0;
     padding: 0;
-    font-family: sans-serif;
+    font-family: 'Poppins', sans-serif;
     background: #ffffff;
   }
   
+  #header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background-color: #ffffff;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 1000;
+  }
+  
+  #header h1 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.2rem;
+    color: #779ccd;
+    margin: 0;
+    margin-left: 80px;
+  }
+  
+  .logo-container {
+    display: flex;
+    align-items: center;
+  }
+  
+  .wide-logo {
+    height: 40px;
+  }
+
   #container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    margin-top: 70px; /* Same as header height */
+    height: calc(100vh - 70px); /* Full height minus header */
   }
   
   #chat {
@@ -27,11 +59,11 @@ html, body {
     border-radius: 8px;
   }
   .user { 
-    background: #f2f2f2; 
+    background: #d5ddeb; 
     align-self: flex-start; 
   }
   .assistant { 
-    background: #d5ddeb; 
+    background: #ffffff; 
   }
   
   .error {
@@ -56,13 +88,13 @@ html, body {
   }
   
   .review-status.success {
-    background-color: #e8fde9;
+    background-color: #d5e5d5;
     border-left: 4px solid #8ab391;
   }
   
   .review-status.warning {
     background-color: #fff5e6;
-    border-left: 4px solid #f9f0da;
+    border-left: 4px solid #e8d6a8;
   }
   
   .review-status.info {
@@ -77,7 +109,7 @@ html, body {
 
   .step pre {
     background: #f6f8fa;
-    padding: 1em;
+    padding: 0.5em;
     border-radius: 8px;
     overflow-x: auto;
   }
@@ -96,7 +128,7 @@ html, body {
   details.step {
     background: #f9f9f9;
     border-left: 4px solid #ccc;
-    padding: 0.5em 1em;
+    padding: 0.5em 0.5em;
     margin: 1em 0;
     border-radius: 6px;
   }
@@ -115,7 +147,7 @@ html, body {
   
   .clarification-btn {
     margin: 0.25em;
-    padding: 0.5em 1em;
+    padding: 0.5em 0.5em;
     border-radius: 20px;
     background-color: #f9f9f9;
     border: 1px solid #ccc;
@@ -155,32 +187,100 @@ html, body {
     cursor: not-allowed;
   }
   
+  .chart-explanation {
+    background-color: #f5f5f5;
+    border-left: 4px solid #8ab391;
+    padding: 0.5em 1em;
+    margin-bottom: 1em;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+
+  .chart-explanation summary {
+    color: #444;
+    cursor: pointer;
+    font-weight: normal;
+  }
+
+  .viz-step {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.5em;
+  }
+
+  .chart-container {
+    width: 100%;
+    height: 400px;
+    margin: 1em 0;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 1em;
+    box-shadow: 0 0 4px rgba(0,0,0,0.1);
+  }
+  
+  .chart-error {
+    padding: 1em;
+    background-color: #ffe6e6;
+    color: #990000;
+    border-left: 4px solid #cc0000;
+    border-radius: 6px;
+    margin: 1em 0;
+  }
+  
+  .chart-message {
+    font-style: italic;
+    color: #666;
+    text-align: center;
+    margin: 1em 0;
+  }
+  
+  @media (max-width: 600px) {
+    .chart-container {
+      height: 300px;
+    }
+  }
+
   #question-form {
     display: flex;
     gap: 0.5em;
     padding: 0.5em;
     border-top: 1px solid #ccc;
-    background: #f9f9f9;
+    background: #e4ebf5;
   }
   #question-input {
     flex: 1;
     padding: 0.5em;
     font-size: 1em;
+    background: #ffffff;
+  }
+  #ask-btn {
+    margin-left: 0.5em;
+    background: #4d4d4d;
+    border: 1px solid #4d4d4d;
+    color: #779ccd;
+    border-radius: 5px;
+    cursor: pointer;
   }
   #stop-btn {
     margin-left: 0.5em;
+    background: #4d4d4d;
+    border: 1px solid #4d4d4d;
+    color: #779ccd;
+    border-radius: 5px;
+    cursor: pointer;
   }
   
   .jump-btn {
     display: none;
     position: fixed;
-    bottom: 80px;
+    bottom: 100px;
     right: 20px;
     z-index: 1000;
     padding: 0.5em 1em;
     font-size: 1em;
-    background: #eee;
-    border: 1px solid #ccc;
+    background: #4d4d4d;
+    border: 1px solid #4d4d4d;
+    color: #779ccd;
     border-radius: 5px;
     cursor: pointer;
   }

@@ -5,6 +5,7 @@ let verifiedQuery = null;
 let modifications = null;
 let finalSQL = null;
 let stopped = false;
+let chartContainer = null;
 
 const chat = document.getElementById("chat");
 
@@ -47,6 +48,17 @@ function sendRunQuery() {
   ws.send(JSON.stringify({ action: "run_query", sql: finalSQL, question: currentQuestion }));
 }
 
+function createChartContainer() {
+  if (chartContainer) {
+    return chartContainer;
+  }
+  
+  chartContainer = document.createElement("div");
+  chartContainer.id = "chart-container";
+  chartContainer.className = "chart-container";
+  return chartContainer;
+}
+
 ws.onmessage = (event) => {
   const msg = JSON.parse(event.data);
   console.log("WS message received:", msg);
@@ -71,7 +83,7 @@ ws.onmessage = (event) => {
     // Create a message for clarification options
     let clarificationsHtml = `
       <div class="step">
-        <b>I noticed your question could be interpreted in different ways. Which of these best matches your intent?</b>
+        <b>Which of these best matches your need?</b>
         <div class="clarification-options">
     `;
     
@@ -120,7 +132,10 @@ ws.onmessage = (event) => {
     appendMessage(`
       <details class="step">
         <summary><b>Verified SQL</b></summary>
-        <pre><code class="sql">${verifiedQuery.sql}</code></pre>
+        <p class="review-status success">Verified SQL:  ${verifiedQuery.name} (${verifiedQuery.id})</p>
+        <pre>       
+          <code class="sql">${verifiedQuery.sql}</code>
+        </pre>
       </details>
     `);
     ws.send(JSON.stringify({ action: "get_recommendations", question: currentQuestion, verified_query: verifiedQuery }));
@@ -133,7 +148,7 @@ ws.onmessage = (event) => {
 
     setWorking("");
 
-    appendMessage(`<div class="step">${currentQuestionEnhanced}</div>`);
+    //appendMessage(`<div class="step">${currentQuestionEnhanced}</div>`);
 
     appendMessage(`
       <details class="step">
@@ -230,18 +245,18 @@ ws.onmessage = (event) => {
     
     let reviewStatus = "";
     if (msg.review_applied) {
-      reviewStatus = `<p class="review-status success">SQL adjusted based on review.</p>`;
+      reviewStatus = `<p class="review-status success">SQL adjusted based on review: ${msg.review_message}</p>`;
     } else if (msg.is_valid === false) {
       reviewStatus = `<p class="review-status warning">SQL may have issues: ${msg.review_message}</p>`;
     } else if (msg.max_iterations_reached) {
-      reviewStatus = `<p class="review-status info">Maximum review iterations completed.</p>`;
+      reviewStatus = `<p class="review-status info">Maximum review iterations completed. ${msg.review_message || ''}</p>`;
     } else if (msg.review_message) {
       reviewStatus = `<p class="review-status success">${msg.review_message}</p>`;
     }
     
     appendMessage(`
       <details class="step">
-        <summary><b>Modified SQL</b></summary>
+        <summary><b>Modified SQL Query</b></summary>
         ${reviewStatus}
         <pre><code class="sql">${finalSQL}</code></pre>
       </details>
@@ -250,67 +265,128 @@ ws.onmessage = (event) => {
     sendRunQuery();
   }
 
+  else if (msg.step === "narrative_generated") {
+    // Show the narrative first
+    if (msg.narrative) {
+      appendMessage(`<div class="step">${msg.narrative}</div>`);
+    }
+    
+    // Show working indicator for chart generation
+    setWorking(msg.message || "Generating visualization...");
+  }
+
+
   else if (msg.step === "query_results") {
     setWorking("");
-
+  
     const results = msg.results;
-    if (msg.narrative) {
-        appendMessage(`<div class="step">${msg.narrative}</div>`);
+    
+    // If a chart configuration was provided, try to render it
+    if (msg.chart_config && msg.chart_config.chart_applicable) {
+      try {
+        const container = createChartContainer();
+        console.log("Container created:", container);
+        
+        // Create div to hold the visualization
+        let vizHtml = `<div class="step viz-step">`;
+        
+        // Add chart generation explanation if available
+        if (msg.chart_config.chart_generation_explanation) {
+          vizHtml += `
+            <details class="chart-explanation">
+              <summary>Chart Selection Explanation</summary>
+              <p>${msg.chart_config.chart_generation_explanation}</p>
+            </details>
+          `;
+        }
+        
+        // Add container for the chart
+        vizHtml += `<div id="viz-container"></div></div>`;
+        
+        appendMessage(vizHtml);
+        
+        // Find the viz container and append the chart
+        const vizContainer = document.getElementById("viz-container");
+        vizContainer.appendChild(container);
+        
+        // CHANGE: Direct call to renderChart instead of script injection
+        console.log("Attempting to render chart directly");
+        if (typeof renderChart === 'function') {
+          console.log("renderChart is a function, calling it");
+          const success = renderChart(msg.chart_config, "chart-container");
+          console.log("Chart render result:", success);
+        } else {
+          console.error("renderChart is not available:", typeof renderChart);
+          document.getElementById("chart-container").innerHTML = 
+            '<div class="chart-error"><p>Chart rendering function not available</p></div>';
+        }
+        
+      } catch (error) {
+        console.error("Error setting up chart:", error);
+        appendMessage(`<div class="chart-error"><p>Unable to set up visualization: ${error.message}</p></div>`);
+      }
     }
 
-    //if (results.rows.length) {
-    //    appendMessage(`<div class="step"><b>Rows:</b> ${results.rows.length}</div>`);
-    //}
-    const headers = results.columns.map(h => `<th>${h}</th>`).join('');
-    const rows = results.rows.map(row => {
-
+    // Always show the tabular data as a fallback
+    if (results.rows && results.rows.length) {
+      const headers = results.columns.map(h => `<th>${h}</th>`).join('');
+      const rows = results.rows.map(row => {
         const cells = results.columns.map(col => `<td>${row[col]}</td>`).join('');
         return `<tr>${cells}</tr>`;
-    }).join('');
+      }).join('');
 
-    appendMessage(`<div class="step">
-                    <b>Results</b>
-                    <table>
+      appendMessage(`<div class="step">
+                      <b>Results</b>
+                      <table>
                         <thead>${headers}</thead>
                         <tbody>${rows}</tbody>
-                    </table>
-                   </div>`);
+                      </table>
+                    </div>`);
+    }
 
     setWorking("Retrieving follow-up suggestions...");
     ws.send(JSON.stringify({ action: "get_follow_ups", query_id: verifiedQuery.id, query_name: verifiedQuery.name, question: currentQuestionEnhanced }));
     setWorking("");
+  }
+
+  else if (msg.step === "follow_ups") {
+    console.log("Follow-ups received:", msg.follow_ups);
+    
+    if (!msg.follow_ups || !msg.follow_ups.length) {
+      console.log("No follow-ups to display");
+      return;
     }
-
-    else if (msg.step === "follow_ups") {
-        if (!msg.follow_ups.length) return;
-
-        const list = msg.follow_ups.map((fu, idx) => {
-            const text = fu.questions?.[0]?.text || '(No question text)';
-            return `<button class="follow-up-btn" data-question="${encodeURIComponent(text)}">${text}</button>`;
-        }).join('');
-
-        appendMessage(`<div class="follow-up">
-                        <b>Suggested Follow-up Questions</b>
-                        <br/>
-                        ${list}
-                       </div>`);
-
-        // Attach event listeners for follow-up buttons
-        document.querySelectorAll(".follow-up-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const text = decodeURIComponent(btn.getAttribute("data-question"));
-            currentQuestion = text;
-            document.getElementById("question-input").value = '';
-            appendMessage(`<strong>User:</strong> ${text}`, 'user');
-
-            setWorking("Searching for best query...");
-            ws.send(JSON.stringify({ action: "get_best_query", question: text }));
-            setWorking("");
-        });
-        });
-    }
-
-
+  
+    const list = msg.follow_ups.map((fu, idx) => {
+      console.log("Processing follow-up:", fu);
+      const questions = fu.questions || [];
+      const text = questions.length > 0 ? questions[0].text : '(No question text)';
+      console.log("Follow-up text:", text);
+      return `<button class="follow-up-btn" data-question="${encodeURIComponent(text)}">${text}</button>`;
+    }).join('');
+  
+    console.log("Follow-up HTML:", list);
+  
+    appendMessage(`<div class="follow-up">
+                    <b>Suggested Follow-up Questions</b>
+                    <br/><br/>
+                    ${list}
+                  </div>`);
+  
+    // Attach event listeners for follow-up buttons
+    document.querySelectorAll(".follow-up-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const text = decodeURIComponent(btn.getAttribute("data-question"));
+        currentQuestion = text;
+        document.getElementById("question-input").value = '';
+        appendMessage(`<strong>User:</strong> ${text}`, 'user');
+  
+        setWorking("Searching for best query...");
+        ws.send(JSON.stringify({ action: "get_best_query", question: text }));
+        setWorking("");
+      });
+    });
+  }
 
 };
 

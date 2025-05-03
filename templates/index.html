@@ -1,13 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>PIQ Smart Assistant</title>
+  <title>Smart Query Assistant</title>
+  <link rel="icon" href="/static/images/piq.png" type="image/png">
   <script src="https://unpkg.com/htmx.org@1.9.2"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">  
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+
+  <div id="header">
+    <div class="logo-container">
+      <img src="/static/images/premiumiq.png" alt="PremiumIQ" class="wide-logo">
+    </div>
+    <h1>Smart Query Assistant</h3>
+  </div>
+
   <div id="container">
     <div id="chat"></div>
 
@@ -17,11 +27,17 @@
 
     <form id="question-form">
       <input type="text" id="question-input" placeholder="Ask a question..." required />
-      <button type="submit">Ask</button>
+      <button type="submit" id="ask-btn">Ask</button>
       <button type="button" id="stop-btn">Stop</button>
     </form>
   </div>
 
+  <script>
+    console.log("Chart.js available:", typeof Chart !== 'undefined');
+  </script>  
+ 
+
   <script src="/static/script.js"></script>
+  <script src="/static/chart_templates.js"></script>
 </body>
 </html>
