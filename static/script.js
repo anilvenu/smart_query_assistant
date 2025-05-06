@@ -115,7 +115,7 @@ ws.onmessage = (event) => {
         appendMessage(`<strong>User clarified:</strong> ${selectedQuestion}`, 'user');
         
         // Send the selected clarification to the server
-        setWorking("Searching for best query...");
+        setWorking("Analyzing...");
         ws.send(JSON.stringify({ 
           action: "select_clarification", 
           selected_question: selectedQuestion,
@@ -127,12 +127,17 @@ ws.onmessage = (event) => {
 
 
   else if (msg.step === "best_query") {
-    setWorking("Generating SQL recommendations...");
+    setWorking("Searching for verified queries that we could use...");
     verifiedQuery = msg.verified_query;
     appendMessage(`
       <details class="step">
         <summary><b>Verified SQL</b></summary>
-        <p class="review-status success">Verified SQL:  ${verifiedQuery.name} (${verifiedQuery.id})</p>
+        <p class="review-status success">
+          <b>Verified SQL:</b>
+          <a href="/admin/verified_query/${verifiedQuery.id}" target="_blank" class="verified-query-link">
+            ${verifiedQuery.name}
+          </a>
+        </p>
         <pre>       
           <code class="sql">${verifiedQuery.sql}</code>
         </pre>
@@ -146,7 +151,7 @@ ws.onmessage = (event) => {
     modifications = msg.modifications;
     currentQuestionEnhanced = msg.enhanced_question;
 
-    setWorking("");
+    setWorking("Generating recommended modifications...");
 
     //appendMessage(`<div class="step">${currentQuestionEnhanced}</div>`);
 
@@ -158,7 +163,7 @@ ws.onmessage = (event) => {
     `);
 
     if (msg.modifications_needed) {
-      setWorking("Modifying query...");
+      setWorking("Applying recommended modifications...");
       ws.send(JSON.stringify({ 
         action: "modify_query", 
         sql: verifiedQuery.sql, 

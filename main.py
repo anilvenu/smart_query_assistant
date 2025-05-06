@@ -27,7 +27,7 @@ from fastapi import Form, Body
 from datetime import datetime
 
 from pydantic import BaseModel
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 
 import json
 
@@ -47,6 +47,7 @@ from app.helper import (
     review_modified_query
 )
 from app.helper import get_verified_query, get_verified_queries, save_verified_query, get_db_session
+from app.helper import get_user_profile, set_user_profile, get_calendar_context
 
 from app.agents.report_writer import (
     write_narrative
@@ -85,12 +86,24 @@ llm_service = LLMService()
 MAX_REVIEW_ITERATIONS = 3
 
 # Add some sample context
-context = {
-    "calendar_context": "Current date: 2025-04-30, Current year: 2025, Previous year: 2024, Current quarter: 2025 Q2, Previous quarter: 2025 Q1, Current month: 2025-04, Previous month: 2025-03",
-    "user_profile": "Region: Northeast",
-}
+#context = {
+#    "calendar_context": "Current date: 2025-04-30, Current year: 2025, Previous year: 2024, Current quarter: 2025 Q2, Previous quarter: 2025 Q1, Current month: 2025-04, Previous month: 2025-03",
+#    "user_profile": "Region: Northeast",
+#}
 
-app = FastAPI()
+
+
+app = FastAPI(
+    title="Smart Query Assistant API",
+    description="API for data analysis and query management",
+    version="1.0.0",
+    openapi_tags=[
+        {"name": "Verified Queries", "description": "Operations with verified SQL queries"},
+        {"name": "Query Execution", "description": "Run and analyze SQL queries"},
+        {"name": "User Profiles", "description": "User profile management"},
+        {"name": "Context", "description": "Calendar and context management"},
+    ]
+)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
@@ -100,6 +113,7 @@ clients = set()
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
 
 @app.get("/admin/verified_queries")
 async def get_all_verified_queries(request: Request):
@@ -128,13 +142,13 @@ async def edit_verified_query_page(request: Request, query_id: str):
     )
 
 # API endpoints
-@app.get("/api/verified_queries")
+@app.get("/api/verified_queries", tags=["Verified Queries"])
 async def api_get_verified_queries(db: Session = Depends(get_db_session)):
     """API endpoint to get all verified queries"""
     queries = get_verified_queries(db)
     return [q.model_dump(mode="json") for q in queries]
 
-@app.get("/api/verified_query/{query_id}")
+@app.get("/api/verified_query/{query_id}", tags=["Verified Queries"])
 async def api_get_verified_query(query_id: str, db: Session = Depends(get_db_session)):
     """API endpoint to get a specific verified query"""
     query = get_verified_query(query_id, db, include_embeddings=False)
@@ -142,7 +156,7 @@ async def api_get_verified_query(query_id: str, db: Session = Depends(get_db_ses
         raise HTTPException(status_code=404, detail="Query not found")
     return query.model_dump(mode="json")
 
-@app.get("/api/find_matching_query")
+@app.get("/api/find_matching_query", tags=["Verified Queries"])
 async def api_find_matching_query(
     query_text: str,
     db: Session = Depends(get_db_session)
@@ -169,7 +183,7 @@ async def api_find_matching_query(
         raise HTTPException(status_code=500, detail=f"Error finding match: {str(e)}")
 
 
-@app.get("/api/query_network")
+@app.get("/api/query_network", tags=["Verified Queries"])
 async def api_get_query_network(db: Session = Depends(get_db_session)):
     """Get the network of verified queries for visualization"""
     try:
@@ -209,7 +223,7 @@ async def api_get_query_network(db: Session = Depends(get_db_session)):
 
 
 # API for creating/updating verified queries
-@app.post("/api/verified_query")
+@app.post("/api/verified_query", tags=["Verified Queries"])
 async def api_create_verified_query(
     query: VerifiedQueryCreate,
     db: Session = Depends(get_db_session)
@@ -247,7 +261,7 @@ async def api_create_verified_query(
         logger.error(f"Error creating verified query: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
-@app.put("/api/verified_query/{query_id}")
+@app.put("/api/verified_query/{query_id}", tags=["Verified Queries"])
 async def api_update_verified_query(
     query_id: str,
     query: VerifiedQueryCreate,
@@ -295,7 +309,7 @@ async def api_update_verified_query(
         logger.error(f"Error updating verified query: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
-@app.post("/api/run_test_query")
+@app.post("/api/run_test_query", tags=["Query Execution"])
 async def api_run_test_query(
     query: Dict[str, str] = Body(...),
     db: Session = Depends(get_db_session)
@@ -321,12 +335,82 @@ async def api_run_test_query(
         }
 
 
-@app.get("/api/verified_queries/options")
+@app.get("/api/verified_queries/options", tags=["Verified Queries"])
 async def api_get_query_options(db: Session = Depends(get_db_session)):
     """API to get all queries as options for follow-ups"""
     queries = get_verified_queries(db)
     return [{"id": q.id, "name": q.name} for q in queries]
 
+@app.get("/api/calendar_context")
+async def api_get_calendar_context():
+    """API endpoint to get calendar context"""
+    try:
+        context = get_calendar_context()
+        return {"context": context}
+    except Exception as e:
+        logger.error(f"Error getting calendar context: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/user_profile")
+async def api_get_user_profile(db: Session = Depends(get_db_session)):
+    """API endpoint to get user profile"""
+    try:
+        profile = get_user_profile(db)
+        return profile
+    except Exception as e:
+        logger.error(f"Error getting user profile: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/user_profile")
+async def api_update_user_profile(
+    profile: Dict[str, Any] = Body(...),
+    db: Session = Depends(get_db_session)
+):
+    """API endpoint to update user profile"""
+    try:
+        user_id = int(profile.get("user_id", 1))
+        name = profile.get("user_name", "")
+        context = profile.get("user_context", "")
+        
+        if not name:
+            raise HTTPException(status_code=400, detail="Name is required")
+        
+        success = set_user_profile(user_id, name, context, db)
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to update profile")
+        
+        return {"status": "success"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error updating user profile: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/get_context")
+async def api_get_context(db: Session = Depends(get_db_session)):
+    """API endpoint to get context"""
+    try:
+        calendar_context = get_calendar_context()
+        
+        # Get user profile (requires DB session)
+        if db:
+            user_profile = get_user_profile(db)
+        else:
+            with Session(engine) as db:
+                user_profile = get_user_profile(db)
+        user_context = user_profile.get("user_context", "") 
+
+        return {
+            "calendar_context": calendar_context,
+            "user_profile": user_context
+        }
+    except Exception as e:
+        logger.error(f"Error fetching context: {str(e)}")
+        return {
+            "calendar_context": "",
+            "user_profile": ""
+        }
 
 # WebSocket endpoint
 @app.websocket("/ws")
@@ -350,10 +434,14 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_json({"status": "stopped"})
                 continue
 
+            # Fetch current context for each request
+            with Session(engine) as db:
+                context = await api_get_context(db)
+                logger.info(f"Current context: {context}")
 
             if action == "get_intent_clarifications":
                 logger.debug(f"Generating intent clarifications for: {question}")
-                
+
                 clarifications = generate_intent_clarifications(question, context, llm_service)
                 
                 await websocket.send_json({
@@ -386,6 +474,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 
                 with Session(engine) as db:
                     best_query_result = get_best_query(question, llm_service, db=db)
+                    print(f"Best query result: {best_query_result}")
                     verified_query = best_query_result["verified_query"]
                     
                     if not verified_query:
@@ -410,6 +499,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 # Proceed with best query selection using the clarified question
                 with Session(engine) as db:
                     best_query_result = get_best_query(question, llm_service, db=db)
+                    print(f"Best query result: {best_query_result}")
                     verified_query = best_query_result["verified_query"]
                     
                     if not verified_query:
@@ -461,7 +551,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 modifications = data.get("modifications")
                 iteration_count = data.get("iteration_count", 0)
 
-                # Get question context
+                # Get questions
                 original_question = data.get("original_question", question)
                 enhanced_question = data.get("enhanced_question", question)
 
@@ -589,7 +679,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 user_question = data.get("question")
                 verified_query_data = data.get("verified_query")  # Get the verified query data if available
                 query_explanation = None
-                
+
                 if verified_query_data:
                     verified_query = VerifiedQuery(**verified_query_data)
                     query_explanation = verified_query.query_explanation
@@ -598,39 +688,56 @@ async def websocket_endpoint(websocket: WebSocket):
                     try:
                         results = run_query(final_sql, db)
 
-                        # First, generate the narrative
-                        narrative = write_narrative(
-                            question=user_question,
-                            context=context,
-                            data=results,
-                            llm_service=llm_service
-                        )
+                        if not results or len(results.get('rows', [])) == 0:
+                            await websocket.send_json({
+                                "status": "ok",
+                                "step": "narrative_generated",
+                                "narrative": "No data was found for your query. Please try modifying your question or parameters.",
+                            })
+                            
+                            # Then send an empty results structure to maintain the expected flow
+                            await websocket.send_json({
+                                "status": "ok", 
+                                "step": "query_results",
+                                "results": {"columns": [], "rows": []},
+                                "chart_config": {"chart_applicable": False}
+                            })            
 
-                        # Send interim update to client
-                        await websocket.send_json({
-                            "status": "ok",
-                            "step": "narrative_generated",
-                            "narrative": narrative,
-                            "message": "Generating visualization..."
-                        })
+                        else:
 
-                        # Now generate chart configuration
-                        chart_config = generate_chart_config(
-                            results=results,
-                            question=user_question,
-                            narrative=narrative,
-                            query_explanation=query_explanation,
-                            llm_service=llm_service
-                        )
+                            # First, generate the narrative
+                            narrative = write_narrative(
+                                question=user_question,
+                                context=context,
+                                data=results,
+                                llm_service=llm_service
+                            )
 
-                        # Send the complete results
-                        await websocket.send_json({
-                            "status": "ok",
-                            "step": "query_results",
-                            "results": results,
-                            "narrative": narrative,
-                            "chart_config": chart_config
-                        })
+                            # Send interim update to client
+                            await websocket.send_json({
+                                "status": "ok",
+                                "step": "narrative_generated",
+                                "narrative": narrative,
+                                "message": "Generating visualization..."
+                            })
+
+                            # Now generate chart configuration
+                            chart_config = generate_chart_config(
+                                results=results,
+                                question=user_question,
+                                narrative=narrative,
+                                query_explanation=query_explanation,
+                                llm_service=llm_service
+                            )
+
+                            # Send the complete results
+                            await websocket.send_json({
+                                "status": "ok",
+                                "step": "query_results",
+                                "results": results,
+                                "narrative": narrative,
+                                "chart_config": chart_config
+                            })
                     except Exception as e:
                         await websocket.send_json({
                             "status": "error",
