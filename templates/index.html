@@ -8,14 +8,15 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">  
   <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
 
   <div id="header">
     <div class="logo-container">
       <img src="/static/images/premiumiq.png" alt="PremiumIQ" class="wide-logo">
     </div>
-    <h1>Smart Query Assistant</h3>
+    <h1>Smart Query Assistant</h1>
+    <div class="user-container">
+      <img src="/static/images/user.png" alt="User" id="user-icon" class="user-icon">
+    </div>    
   </div>
 
   <div id="container">
@@ -32,12 +33,42 @@
     </form>
   </div>
 
-  <script>
-    console.log("Chart.js available:", typeof Chart !== 'undefined');
-  </script>  
- 
+  <div id="user-profile-modal" class="modal">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h2>User Profile</h2>
+              <span class="close">&times;</span>
+          </div>
+          <div class="modal-body">
+              <form id="user-profile-form">
+                  <input type="hidden" id="user-id" name="user_id">
+                  
+                  <div class="form-group">
+                      <label for="user-name">Name</label>
+                      <input type="text" id="user-name" name="user_name" required>
+                  </div>
+                  
+                  <div class="form-group">
+                      <label for="user-context">Profile Context</label>
+                      <textarea id="user-context" name="user_context" rows="4"></textarea>
+                  </div>
+                  
+                  <div class="calendar-context">
+                      <h4>Calendar Context</h4>
+                      <p id="calendar-context-text"></p>
+                  </div>
+                  
+                  <div class="modal-footer">
+                      <button type="button" id="save-profile-btn" class="admin-btn primary">Save</button>
+                      <button type="button" id="close-profile-btn" class="admin-btn">Close</button>
+                  </div>
+              </form>
+          </div>
+      </div>
+  </div>
 
   <script src="/static/script.js"></script>
   <script src="/static/chart_templates.js"></script>
+  <script src="/static/user-profile.js"></script>  
 </body>
 </html>

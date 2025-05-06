@@ -6,6 +6,8 @@ including vector-based search and LLM-based recommendations.
 """
 import json
 import logging
+from datetime import datetime
+import calendar
 from typing import List, Optional, Dict, Any
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
@@ -163,6 +165,7 @@ def get_verified_queries_by_vector_search(question: str, n: int = 5, db: Session
     LIMIT :n
     """
     
+    logger.debug(f"SQL Query: \n{sql}")
     # Execute the query with only the non-vector parameter
     results = db.execute(text(sql), {"n": n}).fetchall()
     
@@ -195,6 +198,29 @@ def get_verified_queries_by_vector_search(question: str, n: int = 5, db: Session
     verified_queries.sort(key=lambda x: x["similarity"], reverse=True)
     
     return verified_queries
+
+def get_calendar_context(db: Session) -> Dict[str, Any]:
+    """
+    Get calendar context for the current user.
+    
+    Args:
+        db: Database session
+    Returns:
+        Dictionary with calendar context
+    """
+    # Example calendar context
+    calendar_context = {
+        "current_year": 2025,
+        "current_quarter": 2,
+        "previous_quarter": 1,
+        "previous_year": 2024,
+        "year_to_date": True
+    }
+    
+    # In a real application, this would be fetched from the database or user profile
+    return calendar_context
+
+
 
 def enhance_question(question: str, context, llm_service) -> str:
     """
@@ -666,9 +692,6 @@ def save_verified_query(verified_query: VerifiedQuery, db: Session) -> bool:
         Success status
     """
     try:
-        # Begin transaction
-        transaction = db.begin()
-        
         # Insert or update the verified query
         query = """
         INSERT INTO verified_query (
@@ -707,20 +730,21 @@ def save_verified_query(verified_query: VerifiedQuery, db: Session) -> bool:
         
         # Insert questions with vector embeddings
         for question in verified_query.questions:
-            # Generate embedding if not provided
-            embedding = question.vector_embedding
-            if embedding is None:
-                embedding_vector = embedding_model.encode(question.text)
-                embedding = embedding_vector.tobytes()
+            # Generate embedding
+            embedding_vector = embedding_model.encode(question.text)
+            vector_str = '[' + ','.join(str(x) for x in embedding_vector) + ']'
             
             db.execute(text("""
             INSERT INTO question (question_text, verified_query_id, vector_embedding)
-            VALUES (:text, :vq_id, :embedding)
+            VALUES (:text, :vq_id, CAST(:embedding AS vector))
             """), {
                 "text": question.text,
                 "vq_id": verified_query.id,
-                "embedding": embedding
+                "embedding": vector_str
             })
+        
+        logger.info(f"Inserted {len(verified_query.questions)} questions for query ID: {verified_query.id}")
+        logger.info(f"Deleted existing questions and follow-ups for query ID: {verified_query.id}")
         
         # Delete existing follow-ups for this query
         db.execute(
@@ -738,15 +762,18 @@ def save_verified_query(verified_query: VerifiedQuery, db: Session) -> bool:
                 "target_id": follow_up_id
             })
         
-        # Commit transaction
-        transaction.commit()
+        logger.info(f"Inserted {len(verified_query.follow_ups)} follow-ups for query ID: {verified_query.id}")
+        
+        # Explicitly commit the transaction
+        db.commit()
+        
         return True
         
     except Exception as e:
         logger.error(f"Error saving verified query: {str(e)}")
-        if transaction:
-            transaction.rollback()
+        db.rollback()
         return False
+
 
 def delete_verified_query(query_id: str, db: Session) -> bool:
     """
@@ -788,4 +815,132 @@ def delete_verified_query(query_id: str, db: Session) -> bool:
         logger.error(f"Error deleting verified query: {str(e)}")
         if transaction:
             transaction.rollback()
+        return False
+    
+
+#---------------------------------------------------------------------------
+# User Profile and Calendar Context Functions
+#---------------------------------------------------------------------------
+
+def get_calendar_context() -> str:
+    """
+    Generate calendar context string based on current date.
+    
+    Returns:
+        Calendar context string
+    """
+    now = datetime.now()
+    
+    # Current date
+    current_date = now.strftime('%Y-%m-%d')
+    
+    # Current year and previous year
+    current_year = now.year
+    previous_year = current_year - 1
+    
+    # Current quarter and previous quarter
+    current_month = now.month
+    current_quarter = (current_month - 1) // 3 + 1
+    previous_quarter_month = current_month - 3
+    previous_quarter_year = current_year
+    
+    if previous_quarter_month <= 0:
+        previous_quarter_month += 12
+        previous_quarter_year -= 1
+    
+    previous_quarter = (previous_quarter_month - 1) // 3 + 1
+    
+    # Current month and previous month
+    current_month_str = now.strftime('%Y-%m')
+    
+    previous_month = current_month - 1
+    previous_month_year = current_year
+    
+    if previous_month <= 0:
+        previous_month += 12
+        previous_month_year -= 1
+    
+    previous_month_str = f"{previous_month_year}-{previous_month:02d}"
+    
+    # Build the context string
+    context = (
+        f"Current date: {current_date}, "
+        f"Current year: {current_year}, "
+        f"Previous year: {previous_year}, "
+        f"Current quarter: {current_year} Q{current_quarter}, "
+        f"Previous quarter: {previous_quarter_year} Q{previous_quarter}, "
+        f"Current month: {current_month_str}, "
+        f"Previous month: {previous_month_str}"
+    )
+    
+    return context
+
+def get_user_profile(db: Session) -> Dict[str, str]:
+    """
+    Get the user profile information.
+    
+    Args:
+        db: Database session
+        
+    Returns:
+        User profile information
+    """
+    try:
+        # For simplicity, we'll assume there's a single user (id=1)
+        result = db.execute(
+            text("SELECT id, name, profile_context FROM users WHERE id = 1")
+        ).fetchone()
+        
+        if result:
+            return {
+                "user_id": result[0],
+                "user_name": result[1],
+                "user_context": result[2] or ""
+            }
+        else:
+            # Create default user if not found
+            db.execute(
+                text("INSERT INTO users (id, name, profile_context) VALUES (1, 'Default User', 'Region: Northeast')")
+            )
+            db.commit()
+            
+            return {
+                "user_id": 1,
+                "user_name": "Default User",
+                "user_context": "Region: Northeast"
+            }
+    except Exception as e:
+        logger.error(f"Error getting user profile: {str(e)}")
+        # Return default values on error
+        return {
+            "user_id": 1,
+            "user_name": "Default User",
+            "user_context": "Region: Northeast"
+        }
+
+def set_user_profile(user_id: int, name: str, context: str, db: Session) -> bool:
+    """
+    Update the user profile information.
+    
+    Args:
+        user_id: User ID
+        name: User name
+        context: User profile context
+        db: Database session
+        
+    Returns:
+        Success status
+    """
+    try:
+        # Update user profile
+        db.execute(
+            text("UPDATE users SET name = :name, profile_context = :context WHERE id = :id"),
+            {"id": user_id, "name": name, "context": context}
+        )
+        db.commit()
+        
+        return True
+    except Exception as e:
+        logger.error(f"Error updating user profile: {str(e)}")
+        db.rollback()
         return False

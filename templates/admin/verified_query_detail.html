@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verified Query Details</title>
+    <link rel="icon" href="/static/images/piq.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/admin.css">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+</head>
+<body>
+    <div id="header">
+        <div class="logo-container">
+            <img src="/static/images/premiumiq.png" alt="PremiumIQ Logo" class="wide-logo">
+        </div>
+        <h1>Query Details</h1>
+    </div>
+
+    <div id="container" class="admin-container">
+        <div class="admin-toolbar">
+            <button id="back-btn" class="admin-btn">Back to List</button>
+            <button id="edit-query-btn" class="admin-btn">Edit Query</button>
+        </div>
+
+        <div class="query-detail-container">
+            <div class="detail-section">
+                <h2 id="query-name">Loading...</h2>
+                <div class="detail-row">
+                    <span class="detail-label">ID:</span>
+                    <span id="query-id" class="detail-value"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Verified By:</span>
+                    <span id="query-verified-by" class="detail-value"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Verified At:</span>
+                    <span id="query-verified-at" class="detail-value"></span>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Explanation</h3>
+                <div id="query-explanation" class="detail-block"></div>
+            </div>
+
+            <div class="detail-section">
+                <h3>SQL Query</h3>
+                <pre><code id="query-sql" class="sql"></code></pre>
+            </div>
+
+            <div class="detail-section">
+                <h3>Instructions</h3>
+                <div id="query-instructions" class="detail-block"></div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Tables Used</h3>
+                <div id="query-tables" class="detail-block tag-container"></div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Questions</h3>
+                <ul id="query-questions" class="detail-list"></ul>
+            </div>
+
+            <div class="detail-section">
+                <h3>Follow-up Queries</h3>
+                <ul id="query-followups" class="detail-list with-links"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/admin/verified_query_detail.js"></script>
+</body>
+</html>

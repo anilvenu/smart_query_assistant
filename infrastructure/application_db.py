@@ -51,7 +51,16 @@ def create_database():
         logger.info(f"Database {DB_NAME} created successfully.")
     else:
         logger.info(f"Database {DB_NAME} already exists.")
-    
+
+
+    # Enable vector extension
+    cursor.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    logger.info("Vector extension enabled.")
+
+    # Enable AGE extension
+    cursor.execute("CREATE EXTENSION IF NOT EXISTS age")
+    logger.info("AGE extension enabled.")
+
     cursor.close()
     conn.close()
 
@@ -67,15 +76,16 @@ def drop_tables():
     )
     conn.autocommit = True
     cursor = conn.cursor()
-    
+
+
+    # Drop index on vector embedding
+    cursor.execute("""DROP INDEX IF EXISTS idx_question_vector_embedding""")
+
     # Drop verified_query table
     cursor.execute("""DROP TABLE IF  EXISTS verified_query CASCADE""")
     
     # Drop follow_up table
     cursor.execute("""DROP TABLE IF  EXISTS follow_up CASCADE""")
-
-    # Drop index on vector embedding
-    cursor.execute("""DROP INDEX IF EXISTS idx_question_vector_embedding""")
 
     # Drop question table
     cursor.execute("""DROP TABLE IF  EXISTS question CASCADE""")
@@ -101,6 +111,7 @@ def create_tables():
     
     # Enable vector extension
     cursor.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    logger.info("Vector extension enabled.")
     
     # Create verified_query table
     cursor.execute("""
@@ -284,9 +295,43 @@ def insert_verified_queries(verified_queries):
         cursor.close()
         conn.close()
 
+def create_users_table():
+    """Create users table in the database."""
+    # Connect to the database
+    conn = psycopg2.connect(
+        dbname=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        host=DB_HOST,
+        port=DB_PORT
+    )
+    conn.autocommit = True
+    cursor = conn.cursor()
+    
+    # Create users table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        profile_context TEXT
+    )
+    """)
+    
+    # Insert default user if not exists
+    cursor.execute("SELECT COUNT(*) FROM users WHERE id = 1")
+    count = cursor.fetchone()[0]
+    
+    if count == 0:
+        cursor.execute("INSERT INTO users (id, name, profile_context) VALUES (1, 'Test User', 'Region: Northeast')")
+    
+    logger.info("Users table created successfully.")
+    cursor.close()
+    conn.close()
+
+
 def main():
     """Main function to initialize the database and load data."""
-    yaml_file_path = "app/verified_queries.yaml"
+    yaml_file_path = "data/verified_queries.yaml"
     
     # Create database and tables
     create_database()
@@ -298,6 +343,13 @@ def main():
     if verified_queries:
         insert_verified_queries(verified_queries)
     
+    logger.info("Inserting verified queries completed successfully.")
+
+    logger.info("Creating users table...")
+    create_users_table()
+    logger.info("Users table created successfully.")    
+
+
     logger.info("Database initialization completed successfully.")
 
 if __name__ == "__main__":
