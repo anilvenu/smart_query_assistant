@@ -29,8 +29,9 @@ function initializeGraph() {
     
     const width = container.clientWidth;
     const height = container.clientHeight;
-    
-    console.log(`Container dimensions: ${width}x${height}`);
+    const tooltip = d3.select("body").append("div")
+      .attr("class", "node-tooltip")
+      .style("opacity", 0);
     
     // Create SVG element
     svg = d3.select('#graph-container')
@@ -141,9 +142,31 @@ function initializeGraph() {
                 })
                 .on('mouseover', function(event, d) {
                     d3.select(this).classed('highlighted', true);
+
+                    // Show tooltip
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+
+                        tooltip.html(`
+                          <strong>${d.name}</strong><br/>
+                          Tables: ${d.tables ? d.tables.join(', ') : 'None'}<br/>
+                          Questions: ${d.questionCount || 0}<br/>
+                          Connections: ${d.connectionCount || 0}
+                      `)
+                      .style("left", (event.pageX + 10) + "px")
+                      .style("top", (event.pageY - 28) + "px");
+
+
                 })
                 .on('mouseout', function(event, d) {
                     d3.select(this).classed('highlighted', false);
+                        
+                    // Hide tooltip
+                    tooltip.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+
                 })
                 .call(d3.drag()
                     .on('start', dragStarted)
@@ -263,34 +286,68 @@ function showNodeInfo(node) {
 
 // Setup search functionality
 function setupSearch() {
-    const searchInput = document.getElementById('graph-search');
-    if (!searchInput) return;
-    
-    searchInput.addEventListener('input', () => {
-        const searchTerm = searchInput.value.toLowerCase();
-        
-        if (!searchTerm) {
-            // Reset all nodes if search is cleared
-            d3.selectAll('.node').classed('highlighted', false);
-            return;
-        }
-        
-        // Highlight matching nodes
-        d3.selectAll('.node').classed('highlighted', d => 
-            d.name.toLowerCase().includes(searchTerm) || 
-            d.id.toLowerCase().includes(searchTerm)
-        );
-        
-        // If there's exactly one match, show its info
-        const matchingNodes = nodesData.filter(n => 
-            n.name.toLowerCase().includes(searchTerm) || 
-            n.id.toLowerCase().includes(searchTerm)
-        );
-        
-        if (matchingNodes.length === 1) {
-            showNodeInfo(matchingNodes[0]);
-        }
-    });
+  const searchInput = document.getElementById('graph-search');
+  if (!searchInput) return;
+  
+  // Create search results container
+  const searchResults = d3.select('#graph-container')
+      .append('div')
+      .attr('class', 'search-results hidden');
+  
+  searchInput.addEventListener('input', () => {
+      const searchTerm = searchInput.value.toLowerCase();
+      
+      if (!searchTerm) {
+          // Clear search results and remove search highlights (different from hover highlights)
+          searchResults.classed('hidden', true).html('');
+          d3.selectAll('.node').classed('search-match', false);
+          return;
+      }
+      
+      // Find matching nodes
+      const matchingNodes = nodesData.filter(n => 
+          n.name.toLowerCase().includes(searchTerm) || 
+          n.id.toLowerCase().includes(searchTerm)
+      );
+      
+      // Apply search-match class (not highlighted class)
+      d3.selectAll('.node').classed('search-match', d => 
+          d.name.toLowerCase().includes(searchTerm) || 
+          d.id.toLowerCase().includes(searchTerm)
+      );
+      
+      // Show search results
+      if (matchingNodes.length > 0) {
+          searchResults.classed('hidden', false)
+              .html('')
+              .selectAll('div')
+              .data(matchingNodes)
+              .enter()
+              .append('div')
+              .attr('class', 'search-result-item')
+              .html(d => `<strong>${d.name}</strong> (${d.tables ? d.tables.join(', ') : 'No tables'})`)
+              .on('click', (event, d) => {
+                  // Show this node info
+                  showNodeInfo(d);
+                  // Select this node
+                  d3.selectAll('.node').classed('selected', false);
+                  d3.selectAll('.node').filter(n => n.id === d.id).classed('selected', true);
+                  selectedNode = d;
+                  
+                  // If using a centered layout, update
+                  if (currentLayout === 'radial' || currentLayout === 'hierarchical') {
+                      updateLayout();
+                  }
+              });
+      } else {
+          searchResults.classed('hidden', true);
+      }
+      
+      // If there's exactly one match, show its info
+      if (matchingNodes.length === 1) {
+          showNodeInfo(matchingNodes[0]);
+      }
+  });
 }
 
 // Setup color selection dropdown
