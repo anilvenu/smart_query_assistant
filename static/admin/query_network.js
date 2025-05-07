@@ -211,16 +211,24 @@ function calculateNodeSize(node) {
 
 // Get node color based on different criteria
 function getNodeColor(node, colorBy) {
+    const blueScale = d3.scaleThreshold()
+        .domain([1, 3, 5])
+        .range(['#E4EBF5', '#779CCD', '#405A8A']);
+        
+    const greenScale = d3.scaleThreshold()
+        .domain([1, 3, 5])
+        .range(['#E8F0E9', '#8AB391', '#5E9066']);
+    
     switch(colorBy) {
         case 'tables':
             // Color by number of tables used
             const tableCount = (node.tables && node.tables.length) || 0;
-            return d3.interpolateBlues(0.3 + (tableCount / 10));
+            return blueScale(tableCount);
             
         case 'connections':
             // Color by number of connections
             const connectionCount = node.connectionCount || 0;
-            return d3.interpolateGreens(0.3 + (connectionCount / 5));
+            return greenScale(connectionCount);
             
         case 'none':
         default:
