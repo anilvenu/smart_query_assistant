@@ -273,11 +273,11 @@ pre {
 }
 
 .notification.success {
-    background-color: #ebf0e9;
+    background-color: #8fbd7c;
 }
 
 .notification.error {
-    background-color: #f4dede;
+    background-color: #b06363;
 }
 
 .notification.hidden {

@@ -46,7 +46,7 @@ from app.helper import (
     modify_query,
     review_modified_query
 )
-from app.helper import get_verified_query, get_verified_queries, save_verified_query, get_db_session
+from app.helper import get_verified_query, get_verified_queries, save_verified_query, delete_verified_query, get_db_session
 from app.helper import get_user_profile, set_user_profile, get_calendar_context
 
 from app.agents.report_writer import (
@@ -309,6 +309,30 @@ async def api_update_verified_query(
         logger.error(f"Error updating verified query: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
+@app.delete("/api/verified_query/{query_id}", tags=["Verified Queries"])
+async def api_delete_verified_query(
+    query_id: str,
+    db: Session = Depends(get_db_session)
+):
+    """API endpoint to delete a verified query"""
+    try:
+        # Check if query exists
+        existing = get_verified_query(query_id, db)
+        if not existing:
+            raise HTTPException(status_code=404, detail="Query not found")
+        
+        # Delete the query
+        success = delete_verified_query(query_id, db)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to delete query")
+        
+        return {"status": "success", "id": query_id}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error deleting verified query: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
+
 @app.post("/api/run_test_query", tags=["Query Execution"])
 async def api_run_test_query(
     query: Dict[str, str] = Body(...),
@@ -333,7 +357,6 @@ async def api_run_test_query(
             "status": "error",
             "message": str(e)
         }
-
 
 @app.get("/api/verified_queries/options", tags=["Verified Queries"])
 async def api_get_query_options(db: Session = Depends(get_db_session)):
