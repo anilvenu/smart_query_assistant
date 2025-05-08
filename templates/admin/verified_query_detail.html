@@ -7,7 +7,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
-    <link rel="stylesheet" href="/static/admin.css">
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
     <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
 </head>
@@ -21,8 +20,12 @@
 
     <div id="container" class="admin-container">
         <div class="admin-toolbar">
-            <button id="back-btn" class="admin-btn">Back to List</button>
-            <button id="edit-query-btn" class="admin-btn">Edit Query</button>
+            <button id="back-btn" class="btn">Back to List</button>
+
+            <div>
+                <button id="edit-query-btn" class="btn">Edit</button>
+                <button id="delete-query-btn" class="btn">Delete</button>    
+            </div>
         </div>
 
         <div class="query-detail-container">

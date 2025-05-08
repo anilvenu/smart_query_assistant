@@ -67,6 +67,7 @@ function displayQueries(queries) {
                 <td>${formattedDate}</td>
                 <td>
                     <button class="admin-btn small view-btn" onclick="viewQuery('${query.id}')">View</button>
+                    <button class="admin-btn small edit-btn" onclick="editQuery('${query.id}')">Edit</button>
                 </td>
             </tr>
         `;
@@ -77,6 +78,9 @@ function displayQueries(queries) {
 
 function viewQuery(queryId) {
     window.location.href = `/admin/verified_query/${queryId}`;
+}
+function editQuery(queryId) {
+    window.location.href = `/admin/verified_query/${queryId}/edit`;
 }
 
 function filterQueries() {

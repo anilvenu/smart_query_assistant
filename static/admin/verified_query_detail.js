@@ -17,6 +17,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('edit-query-btn').addEventListener('click', function() {
         window.location.href = `/admin/verified_query/${queryId}/edit`;
     });
+    
+    // Setup delete confirmation
+    document.getElementById('delete-query-btn').addEventListener('click', function() {
+        if (confirm(`Are you sure you want to delete this query? This action cannot be undone.`)) {
+            deleteVerifiedQuery(queryId);
+        }
+    });
 });
 
 async function loadQueryDetails(queryId) {
@@ -95,4 +102,66 @@ function displayQueryDetails(query) {
 
 function viewQuery(queryId) {
     window.location.href = `/admin/verified_query/${queryId}`;
+}
+
+async function deleteVerifiedQuery(queryId) {
+    try {
+        const response = await fetch(`/api/verified_query/${queryId}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to delete query');
+        }
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            // Show success notification
+            showNotification('Query deleted successfully', 'success');
+            
+            // Redirect to queries list after a brief delay
+            setTimeout(() => {
+                window.location.href = '/admin/verified_queries';
+            }, 1500);
+        } else {
+            throw new Error(result.detail || 'Failed to delete query');
+        }
+        
+    } catch (error) {
+        console.error('Error deleting query:', error);
+        showNotification(`Error: ${error.message}`, 'error');
+    }
+
+    function showNotification(message, type) {
+        // Check if notification container exists
+        let container = document.getElementById('notification-container');
+        
+        if (!container) {
+            // Create container if it doesn't exist
+            container = document.createElement('div');
+            container.id = 'notification-container';
+            document.body.appendChild(container);
+        }
+        
+        // Create notification
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        
+        // Add to container
+        container.appendChild(notification);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            notification.classList.add('fade-out');
+            setTimeout(() => {
+                container.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }    
+    
+
+    
 }

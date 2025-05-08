@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!isNew) {
         queryId = pathParts[pathParts.length - 2]; // URL format: /admin/verified_query/{id}/edit
         findMatchSection.style.display = 'none';     // Show/hide find match section based on isNew
+    } else {
+        document.getElementById('query-id').value = generateUUID(); // Generate an ID
     }
 
     // Initialize form
@@ -23,7 +25,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Setup event listeners
     setupEventListeners();
-});v
+});
+
+// UUID generator function
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
 
 async function initForm() {
     // Load query options for follow-ups
@@ -493,13 +503,18 @@ async function saveQuery() {
         
         const result = await response.json();
         
-        // Show success notification
-        showNotification(`Query ${isNew ? 'created' : 'updated'} successfully`, 'success');
-        
-        // Redirect to detail view
-        setTimeout(() => {
-            window.location.href = `/admin/verified_query/${result.id}`;
-        }, 1000);
+        if (result.status === 'success') {
+            showNotification('Query saved successfully', 'success');
+            
+            // Redirect to detail view after a brief delay
+            setTimeout(() => {
+                const savedId = formData.id.replace(/\/$/, '');
+                window.location.href = `/admin/verified_query/${savedId}`;
+            }, 1000);
+        } else {
+            throw new Error(result.message || 'Failed to save query');
+        }
+
     } catch (error) {
         console.error('Error saving query:', error);
         showNotification(`Failed to save query: ${error.message}`, 'error');

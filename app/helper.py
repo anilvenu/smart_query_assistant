@@ -787,9 +787,6 @@ def delete_verified_query(query_id: str, db: Session) -> bool:
         Success status
     """
     try:
-        # Begin transaction
-        transaction = db.begin()
-        
         # Delete questions for this query
         db.execute(
             text("DELETE FROM question WHERE verified_query_id = :id"),
@@ -807,16 +804,15 @@ def delete_verified_query(query_id: str, db: Session) -> bool:
             {"id": query_id}
         )
         
-        # Commit transaction
-        transaction.commit()
+        # Commit changes
+        db.commit()
         return True
         
     except Exception as e:
         logger.error(f"Error deleting verified query: {str(e)}")
-        if transaction:
-            transaction.rollback()
+        db.rollback()
         return False
-    
+
 
 #---------------------------------------------------------------------------
 # User Profile and Calendar Context Functions
