@@ -21,6 +21,7 @@ uvicorn = "*"
 jinja2 = "*"
 httpx = "*"
 websockets = "*"
+reportlab = "*"
 
 [dev-packages]
 ipykernel = "*"

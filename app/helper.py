@@ -238,7 +238,6 @@ def enhance_question(question: str, context, llm_service) -> str:
     Your task is to enhance user questions to make them more specific and clear."""
 
     # User prompt with the original question
-    # User prompt with the original question
     user_prompt = f"""
     You are helping clarify and enhance user questions for insurance data analysis. Your goal is to make them more specific and clear.
 
