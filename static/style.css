@@ -284,6 +284,11 @@ textarea {
   border: 1px solid #eee;
 }
 
+.message.success {
+  background-color: var(--color-light-green);
+  border-left: 4px solid var(--color-green);
+}
+
 .message.error {
   background-color: var(--color-light-red);
   color: var(--color-red);
@@ -310,6 +315,17 @@ textarea {
   background: var(--color-white);
   border: 1px solid #ddd;
   border-radius: var(--border-radius-sm);
+}
+
+.reconnect-btn {
+  margin-right: var(--space-md);
+  background-color: var(--color-blue);
+  color: var(--color-white);
+}
+
+.reconnect-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .jump-btn {
@@ -469,6 +485,55 @@ summary {
   color: var(--color-dark-gray);
   cursor: pointer;
   font-weight: normal;
+}
+
+/* ========== PROGRESS ========== */
+.working {
+  display: none;
+  align-items: center;
+  margin: var(--space-sm) 0;
+  padding: var(--space-sm);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+}
+
+.working.active {
+  display: flex;
+}
+
+.spinner {
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top: 3px solid var(--color-blue);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+  margin-right: var(--space-sm);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.progress-container {
+  margin-top: var(--space-xs);
+  width: 100%;
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 6px;
+  background-color: var(--color-blue);
+  transition: width 0.3s ease;
+}
+
+/* For dark mode compatibility */
+[data-theme="dark"] .spinner {
+  border-color: rgba(255, 255, 255, 0.1);
+  border-top-color: var(--color-blue);
 }
 
 /* ========== MODALS ========== */
