@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prompt Details</title>
+    <link rel="icon" href="/static/images/piq.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+</head>
+<body>
+    <div id="header">
+        <div class="logo-container">
+            <img src="/static/images/premiumiq.png" alt="PremiumIQ Logo" class="wide-logo">
+        </div>
+        <h1>Prompt Details</h1>
+    </div>
+
+    <div id="container" class="admin-container">
+        <div class="admin-toolbar">
+            <button id="back-btn" class="btn">Back to List</button>
+
+            <div>
+                <button id="edit-prompt-btn" class="btn">Edit</button>
+                <button id="delete-prompt-btn" class="btn">Delete</button>    
+            </div>
+        </div>
+
+        <div class="query-detail-container">
+            <div class="detail-section">
+                <h2 id="prompt-name">Loading...</h2>
+                <div class="detail-row">
+                    <span class="detail-label">ID:</span>
+                    <span id="prompt-id" class="detail-value"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Verbose:</span>
+                    <span id="prompt-verbose" class="detail-value"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Updated At:</span>
+                    <span id="prompt-updated-at" class="detail-value"></span>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Description</h3>
+                <div id="prompt-description" class="detail-block"></div>
+            </div>
+
+            <div class="detail-section">
+                <h3>System Prompt</h3>
+                <pre><code id="system-prompt" class="language-markdown"></code></pre>
+            </div>
+
+            <div class="detail-section">
+                <h3>User Prompt</h3>
+                <pre><code id="user-prompt" class="language-markdown"></code></pre>
+            </div>
+
+            <div class="detail-section">
+                <h3>Parameters</h3>
+                <ul id="prompt-parameters" class="detail-list"></ul>
+            </div>
+
+            <div class="detail-section">
+                <h3>Test Prompt</h3>
+                <div class="form-group">
+                    <div id="test-parameters-form">
+                        <!-- Parameter inputs will be generated here -->
+                    </div>
+                    <button id="test-prompt-btn" class="btn btn-primary">Test Prompt</button>
+                </div>
+                
+                <div id="test-results" class="hidden">
+                    <h4>Test Results</h4>
+                    <div class="detail-section">
+                        <h5>Formatted Prompt</h5>
+                        <div class="detail-block">
+                            <strong>System Prompt:</strong>
+                            <pre id="formatted-system-prompt"></pre>
+                            <strong>User Prompt:</strong>
+                            <pre id="formatted-user-prompt"></pre>
+                        </div>
+                    </div>
+                    <div class="detail-section">
+                        <h5>Response</h5>
+                        <pre id="prompt-test-result" class="detail-block"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification-container"></div>
+
+    <script src="/static/admin/prompt_detail.js"></script>
+</body>
+</html>

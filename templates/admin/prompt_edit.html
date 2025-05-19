@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prompt Editor</title>
+    <link rel="icon" href="/static/images/piq.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/admin.css">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+</head>
+<body>
+    <div id="header">
+        <div class="logo-container">
+            <img src="/static/images/premiumiq.png" alt="PremiumIQ Logo" class="wide-logo">
+        </div>
+        <h1 id="page-title">{{ "Create New Prompt" if is_new else "Edit Prompt" }}</h1>
+    </div>
+
+    <div id="container" class="admin-container">
+        <div class="admin-toolbar">
+            <button id="back-btn" class="admin-btn">Back</button>
+            <div>
+                <button id="save-btn" class="admin-btn">Save Prompt</button>
+                <button id="cancel-btn" class="admin-btn">Cancel</button>
+            </div>
+        </div>
+
+        <div class="edit-container">
+            <form id="prompt-form" class="edit-form">
+                <div class="form-section">
+                    <h3>Basic Information</h3>
+                    <div class="form-group">
+                        <label for="prompt-id">ID</label>
+                        <input type="text" id="prompt-id" name="id" required {{ "readonly" if not is_new else "" }}>
+                        <small>Unique identifier, used in code (e.g., enhance_question)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="prompt-name">Name</label>
+                        <input type="text" id="prompt-name" name="name" required>
+                        <small>Human-readable name</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="prompt-description">Description</label>
+                        <textarea id="prompt-description" name="description" rows="3" required></textarea>
+                        <small>Explain what this prompt does</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="prompt-verbose_flag">Verbose Mode</label>
+                        <input type="checkbox" id="prompt-verbose_flag" name="verbose_flag">
+                        <small>Enable detailed logging for this prompt</small>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>System Prompt</h3>
+                    <div class="form-group">
+                        <textarea id="system-prompt" name="system_prompt" rows="5" required></textarea>
+                        <small>Instructions to define the AI's role and task</small>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>User Prompt</h3>
+                    <div class="form-group">
+                        <textarea id="user-prompt" name="user_prompt" rows="10" required></textarea>
+                        <small>Template with placeholders for parameters (e.g., {parameter_name})</small>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Parameters</h3>
+                    <div class="form-group">
+                        <div class="parameter-input-row">
+                            <input type="text" id="parameter-name" placeholder="Parameter name" class="parameter-input">
+                            <input type="text" id="parameter-description" placeholder="Description" class="parameter-input">
+                            <input type="text" id="parameter-default" placeholder="Default value (optional)" class="parameter-input">
+                            <label class="parameter-required">
+                                <input type="checkbox" id="parameter-required" checked>
+                                Required
+                            </label>
+                            <button type="button" id="add-parameter-btn" class="admin-btn small">Add</button>
+                        </div>
+                    </div>
+                    <div id="parameters-container" class="list-container"></div>
+                    <input type="hidden" id="parameters" name="parameters">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="notification" class="notification hidden"></div>
+
+    <script src="/static/admin/prompt_edit.js"></script>
+</body>
+</html>

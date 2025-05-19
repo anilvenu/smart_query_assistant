@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prompts Management</title>
+    <link rel="icon" href="/static/images/piq.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="header">
+        <div class="logo-container">
+            <img src="/static/images/premiumiq.png" alt="PremiumIQ Logo" class="wide-logo">
+        </div>
+        <h1>Prompts Management</h1>
+    </div>
+
+    <div id="container" class="admin-container">
+        <div class="admin-toolbar">
+            <input type="text" id="search-input" class="form-control" placeholder="Search prompts...">
+            <button id="add-prompt-btn" class="btn btn-primary">New Prompt</button>
+        </div>
+
+        <div id="prompts-table-container">
+            <table id="prompts-table" class="admin-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Parameters</th>
+                        <th>Verbose</th>
+                        <th>Updated At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="prompts-list">
+                    <!-- Data will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="notification" class="notification hidden"></div>
+
+    <script src="/static/admin/prompts.js"></script>
+</body>
+</html>

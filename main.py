@@ -38,7 +38,6 @@ from sqlalchemy.orm import Session
 from app.helper import (
     VerifiedQuery,
     Question,
-    enhance_question,
     generate_intent_clarifications,
     get_best_query,
     get_query_recommendations,
@@ -54,6 +53,9 @@ from app.agents.report_writer import (
 )
 from app.gadgets.sql_runner import run_query
 from app.visualization.chart_generator import generate_chart_config
+
+from app.utilities import prompt_builder
+from app.api.prompt_routes import add_prompt_routes
 
 # Configurations
 from app.utilities import config
@@ -85,14 +87,6 @@ llm_service = LLMService()
 
 MAX_REVIEW_ITERATIONS = 3
 
-# Add some sample context
-#context = {
-#    "calendar_context": "Current date: 2025-04-30, Current year: 2025, Previous year: 2024, Current quarter: 2025 Q2, Previous quarter: 2025 Q1, Current month: 2025-04, Previous month: 2025-03",
-#    "user_profile": "Region: Northeast",
-#}
-
-
-
 app = FastAPI(
     title="Smart Query Assistant API",
     description="API for data analysis and query management",
@@ -108,6 +102,17 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 clients = set()
+
+
+# Initialize prompt builder during app startup
+@app.on_event("startup")
+async def initialize_prompt_builder():
+    # Initialize prompt builder with database connection string
+    prompt_builder.initialize(config.APPLICATION_DB_CONNECTION_STRING)
+
+# Add the prompt API routes
+add_prompt_routes(app)
+
 
 # Web pages
 @app.get("/", response_class=HTMLResponse)
@@ -140,6 +145,34 @@ async def edit_verified_query_page(request: Request, query_id: str):
         "admin/verified_query_edit.html", 
         {"request": request, "is_new": False, "query_id": query_id}
     )
+
+@app.get("/admin/prompts", response_class=HTMLResponse)
+async def admin_prompts(request: Request):
+    """Admin page to view all prompts"""
+    return templates.TemplateResponse("admin/prompts.html", {"request": request})
+
+@app.get("/admin/prompts/{prompt_id}", response_class=HTMLResponse)
+async def view_prompt(request: Request, prompt_id: str):
+    """Admin page to view a specific prompt"""
+    logger.info(f"Viewing prompt with ID: {prompt_id}")
+    return templates.TemplateResponse("admin/prompt_detail.html", {"request": request, "prompt_id": prompt_id})
+
+@app.get("/admin/prompts/new", response_class=HTMLResponse)
+async def new_prompt_page(request: Request):
+    """Admin page to create a new prompt"""
+    return templates.TemplateResponse(
+        "admin/prompt_edit.html", 
+        {"request": request, "is_new": True}
+    )
+
+@app.get("/admin/prompts/{prompt_id}/edit", response_class=HTMLResponse)
+async def edit_prompt_page(request: Request, prompt_id: str):
+    """Admin page to edit an existing prompt"""
+    return templates.TemplateResponse(
+        "admin/prompt_edit.html", 
+        {"request": request, "is_new": False, "prompt_id": prompt_id}
+    )
+
 
 # API endpoints
 @app.get("/api/verified_queries", tags=["Verified Queries"])

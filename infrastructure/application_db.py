@@ -89,6 +89,12 @@ def drop_tables():
 
     # Drop question table
     cursor.execute("""DROP TABLE IF  EXISTS question CASCADE""")
+
+    # Drop prompt parameters table
+    cursor.execute("""DROP TABLE IF  EXISTS prompt_parameters CASCADE""")
+
+    # Drop prompt table
+    cursor.execute("""DROP TABLE IF  EXISTS prompts CASCADE""")
     
     
     logger.info("Tables dropped successfully.")
@@ -147,7 +153,7 @@ def create_tables():
         UNIQUE (question_text, verified_query_id)
     )
     """)
-    
+
     # Create index on vector embedding
     cursor.execute("""
     CREATE INDEX IF NOT EXISTS idx_question_vector_embedding 

@@ -16,6 +16,8 @@ from sentence_transformers import SentenceTransformer
 from app.utilities import config
 from app.models.verified_query import VerifiedQuery, Question
 
+from app.utilities import prompt_builder
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -269,6 +271,19 @@ def enhance_question(question: str, context, llm_service) -> str:
     try:
         logger.info("Enhancing question with LLM...")
         
+        # Get prompt from prompt builder
+        system_prompt, user_prompt, verbose_flag = prompt_builder.build_prompt(
+            prompt_id="enhance_question",
+            params={
+                "question": question,
+                "context": context
+            }
+        )
+        logger.error(f"Verbose: {verbose_flag}")
+        if not system_prompt or not user_prompt:
+            logger.error("Failed to build prompt for enhance_question")
+            return question
+
         # Get enhanced question from LLM
         enhanced_question = llm_service.generate_text(
             prompt=user_prompt,
